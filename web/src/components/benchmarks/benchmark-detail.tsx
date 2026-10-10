@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { PlayIcon, Trash2Icon } from "lucide-react";
 
 import { CategoryBadge, CodeTag, SourceBadge } from "@/components/badges";
+import { useConfirm } from "@/components/confirm";
 import { PageBody, PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
 import { ErrorState, PageSkeleton } from "@/components/states";
@@ -19,7 +20,7 @@ import { api, useSuite } from "@/lib/api";
 import { num } from "@/lib/format";
 import { SCORER_LABELS } from "@/lib/labels";
 import type { Item } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { clickableRow, cn } from "@/lib/utils";
 
 const LETTERS = "ABCDEFGHIJ";
 
@@ -46,9 +47,12 @@ export function BenchmarkDetail() {
   const { data: suite, error } = useSuite(id);
   const [selected, setSelected] = useState<Item | null>(null);
   const router = useRouter();
+  const [ask, confirmDialog] = useConfirm();
 
   async function remove() {
-    if (!suite || !confirm(`Delete ${suite.name}? Past runs keep their results.`)) return;
+    if (!suite) return;
+    const ok = await ask({ title: `Delete ${suite.name}?`, description: "Past runs keep their results.", confirmLabel: "Delete", destructive: true });
+    if (!ok) return;
     try {
       await api.del(`/suites/${suite.id}`);
       toast.success("Benchmark deleted");
@@ -119,7 +123,7 @@ export function BenchmarkDetail() {
               </TableHeader>
               <TableBody>
                 {suite.items.map((item) => (
-                  <TableRow key={item.id} className="cursor-pointer" onClick={() => setSelected(item)}>
+                  <TableRow key={item.id} {...clickableRow(() => setSelected(item))}>
                     <TableCell className="text-muted-foreground pl-6 font-mono text-xs">{item.id}</TableCell>
                     <TableCell className="max-w-0">
                       <div className="truncate">{item.input}</div>
@@ -134,6 +138,7 @@ export function BenchmarkDetail() {
           </div>
         </Card>
       </PageBody>
+      {confirmDialog}
       <Sheet open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
         <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
           {selected && (

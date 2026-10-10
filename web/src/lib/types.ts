@@ -118,6 +118,7 @@ export interface SuiteScore {
   n: number;
   errors: number;
   score: number; // 0..1
+  margin: number; // 95% confidence interval half-width
   passed: number;
 }
 
@@ -137,6 +138,7 @@ export interface RunSummary {
   completed: number;
   errors: number;
   score: number; // 0..1
+  margin: number; // 95% confidence interval half-width
   by_suite: SuiteScore[];
   perf: PerfStats;
 }
@@ -244,4 +246,5 @@ export interface ChatMetrics {
   output_tokens: number;
   tokens_per_sec: number | null;
   tokens_estimated: boolean;
+  truncated: boolean;
 }

@@ -4,10 +4,21 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { CircleAlertIcon, DownloadIcon, GitCompareIcon, RotateCcwIcon, SearchIcon, SquareIcon, Trash2Icon } from "lucide-react";
+import {
+  CircleAlertIcon,
+  DownloadIcon,
+  FileTextIcon,
+  GitCompareIcon,
+  RotateCcwIcon,
+  SearchIcon,
+  SheetIcon,
+  SquareIcon,
+  Trash2Icon,
+} from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Cell, XAxis, YAxis } from "recharts";
 
 import { CategoryBadge, CodeTag, PassBadge, ScoreBar, StatusBadge, TONE_TEXT } from "@/components/badges";
+import { useConfirm } from "@/components/confirm";
 import { PageBody, PageHeader } from "@/components/page-header";
 import { SampleSheet } from "@/components/runs/sample-sheet";
 import { StatCard } from "@/components/stat-card";
@@ -16,16 +27,25 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { api, useRun } from "@/lib/api";
-import { dateTime, duration, ms, num, pct, points, scoreTone, tps } from "@/lib/format";
+import { dateTime, duration, ms, num, pct, points, scoreTone, span, tps } from "@/lib/format";
 import { SCORER_LABELS } from "@/lib/labels";
 import type { Run, RunDetail as RunDetailType } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { clickableRow, cn } from "@/lib/utils";
+
+/** Remaining time for a running run, from its pace so far. */
+function eta(run: Run): string | null {
+  const { completed, total } = run.summary;
+  if (!run.started_at || completed === 0 || completed >= total) return null;
+  const elapsed = Date.now() - new Date(run.started_at).getTime();
+  return span((elapsed / completed) * (total - completed));
+}
 
 const TONE_FILL = {
   success: "oklch(0.7 0.16 155)",
@@ -74,6 +94,7 @@ export function RunDetail() {
   const [suiteFilter, setSuiteFilter] = useState("all");
   const [query, setQuery] = useState("");
   const [openId, setOpenId] = useState<number | null>(null);
+  const [ask, confirmDialog] = useConfirm();
 
   const suiteNames = useMemo(() => new Map(run?.summary.by_suite.map((s) => [s.suite_id, s.name])), [run]);
   const samples = useMemo(() => {
@@ -117,7 +138,8 @@ export function RunDetail() {
   }
 
   async function remove() {
-    if (!confirm("Delete this run and all of its results?")) return;
+    const ok = await ask({ title: "Delete this run?", description: "All of its answers and scores will be removed.", confirmLabel: "Delete", destructive: true });
+    if (!ok) return;
     try {
       await api.del(`/runs/${run!.id}`);
       toast.success("Run deleted");
@@ -143,11 +165,25 @@ export function RunDetail() {
                 <RotateCcwIcon /> Run again
               </Button>
             )}
-            <Button variant="outline" asChild>
-              <a href={`/api/runs/${run.id}/report.md`} download={`sentinel-run-${run.id}.md`}>
-                <DownloadIcon /> Report
-              </a>
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  <DownloadIcon /> Export
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                  <a href={`/api/runs/${run.id}/report.md`} download={`sentinel-run-${run.id}.md`}>
+                    <FileTextIcon /> Markdown report
+                  </a>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <a href={`/api/runs/${run.id}/samples.csv`} download={`sentinel-run-${run.id}.csv`}>
+                    <SheetIcon /> All answers (CSV)
+                  </a>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button variant="outline" asChild>
               <Link href={`/runs/compare?a=${run.id}`}>
                 <GitCompareIcon /> Compare
@@ -169,8 +205,11 @@ export function RunDetail() {
         {active && (
           <div className="mt-5 space-y-1.5">
             <Progress value={summary.total ? (summary.completed / summary.total) * 100 : 0} className="h-1.5" />
-            <div className="text-muted-foreground tabular text-xs">
-              {summary.completed} of {summary.total} items evaluated
+            <div className="text-muted-foreground tabular flex justify-between text-xs">
+              <span>
+                {summary.completed} of {summary.total} items evaluated
+              </span>
+              {eta(run) && <span>about {eta(run)} left</span>}
             </div>
           </div>
         )}
@@ -189,18 +228,18 @@ export function RunDetail() {
             label="Overall score"
             value={summary.completed > summary.errors ? pct(summary.score) : "—"}
             tone={summary.completed > summary.errors ? tone : "default"}
-            hint="Average of the benchmark scores"
+            hint={summary.margin ? `± ${points(summary.margin)} points (95% CI)` : "Average of the benchmark scores"}
           />
           <StatCard
             label="Items"
             value={`${num(summary.completed)}/${num(summary.total)}`}
             hint={summary.errors ? `${summary.errors} errored` : "No errors"}
           />
-          <StatCard label="Latency" value={ms(perf.avg_latency_ms ? Math.round(perf.avg_latency_ms) : null)} hint={`p50 ${ms(perf.p50_latency_ms ? Math.round(perf.p50_latency_ms) : null)} · p95 ${ms(perf.p95_latency_ms ? Math.round(perf.p95_latency_ms) : null)}`} />
+          <StatCard label="Latency" value={ms(perf.avg_latency_ms)} hint={`p50 ${ms(perf.p50_latency_ms)} · p95 ${ms(perf.p95_latency_ms)}`} />
           <StatCard
             label="Output speed"
             value={tps(perf.tokens_per_sec)}
-            hint={`First token in ${ms(perf.avg_ttft_ms ? Math.round(perf.avg_ttft_ms) : null)}${perf.tokens_estimated ? " · tokens estimated" : ""}`}
+            hint={`First token in ${ms(perf.avg_ttft_ms)}${perf.tokens_estimated ? " · tokens estimated" : ""}`}
           />
         </div>
 
@@ -223,7 +262,7 @@ export function RunDetail() {
               </TableHeader>
               <TableBody>
                 {summary.by_suite.map((s) => (
-                  <TableRow key={s.suite_id} className="cursor-pointer" onClick={() => setSuiteFilter(s.suite_id)}>
+                  <TableRow key={s.suite_id} {...clickableRow(() => setSuiteFilter(s.suite_id))}>
                     <TableCell className="pl-6">
                       <div className="font-medium">{s.name}</div>
                       <CategoryBadge category={s.category} className="mt-1" />
@@ -236,6 +275,11 @@ export function RunDetail() {
                     <TableCell className="pr-6">
                       <div className={cn("tabular text-right font-semibold", s.n ? TONE_TEXT[scoreTone(s.score)] : "text-muted-foreground")}>
                         {s.n ? points(s.score) : "—"}
+                        {s.n > 1 && (
+                          <span className="text-muted-foreground ml-1 text-xs font-normal" title="95% confidence interval">
+                            ±{points(s.margin)}
+                          </span>
+                        )}
                       </div>
                       <ScoreBar score={s.n ? s.score : 0} className="mt-1.5" />
                     </TableCell>
@@ -292,7 +336,7 @@ export function RunDetail() {
               </TableHeader>
               <TableBody>
                 {samples.slice(0, 300).map((s) => (
-                  <TableRow key={s.id} className="cursor-pointer" onClick={() => setOpenId(s.id)}>
+                  <TableRow key={s.id} {...clickableRow(() => setOpenId(s.id))}>
                     <TableCell className="pl-6">
                       <div className="font-mono text-xs">{s.item_id}</div>
                       <div className="text-muted-foreground truncate text-[11px]">{suiteNames.get(s.suite_id)}</div>
@@ -325,6 +369,7 @@ export function RunDetail() {
           </div>
         </Card>
       </PageBody>
+      {confirmDialog}
       <SampleSheet sample={openSample} suiteName={openSample ? suiteNames.get(openSample.suite_id) : undefined} onOpenChange={(o) => !o && setOpenId(null)} />
     </>
   );

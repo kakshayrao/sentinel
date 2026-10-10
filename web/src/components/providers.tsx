@@ -8,7 +8,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
       <SWRConfig value={{ errorRetryCount: 2 }}>
         <TooltipProvider delayDuration={150}>
           {children}

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { EqualIcon, Loader2Icon, RotateCcwIcon, SwordsIcon, ThumbsDownIcon, TrophyIcon } from "lucide-react";
 
+import { Markdown } from "@/components/markdown";
 import { PageBody, PageHeader } from "@/components/page-header";
 import { EmptyState, LoadingRows } from "@/components/states";
 import { Badge } from "@/components/ui/badge";
@@ -41,11 +42,11 @@ function Answer({ label, side, winner, revealed }: { label: string; side: Battle
       <CardContent className="space-y-3">
         <div
           className={cn(
-            "bg-muted/40 max-h-[28rem] min-h-40 overflow-y-auto rounded-md border p-4 text-sm leading-relaxed whitespace-pre-wrap",
+            "bg-muted/40 max-h-[28rem] min-h-40 overflow-y-auto rounded-md border p-4 text-sm",
             side.error && "text-destructive",
           )}
         >
-          {side.error ?? side.response}
+          {side.error ?? <Markdown>{side.response || "(empty reply)"}</Markdown>}
         </div>
         <div className="text-muted-foreground tabular flex gap-4 text-xs">
           <span>{ms(side.latency_ms)}</span>

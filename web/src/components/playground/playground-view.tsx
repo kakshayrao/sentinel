@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { ArrowUpIcon, BoxIcon, EraserIcon, SquareIcon } from "lucide-react";
 
+import { Markdown } from "@/components/markdown";
 import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/states";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ import type { ChatMessage, ChatMetrics } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 interface Turn extends ChatMessage {
+  reasoning?: string; // thinking models stream their reasoning separately
   metrics?: ChatMetrics | null;
   error?: string;
 }
@@ -63,31 +65,21 @@ export function PlaygroundView() {
       ...(system.trim() ? [{ role: "system" as const, content: system.trim() }] : []),
       ...history.filter((t) => !t.error).map(({ role, content }) => ({ role, content })),
     ];
+    // The reply being streamed is always the last turn
+    const patchLast = (update: (turn: Turn) => Partial<Turn>) =>
+      setTurns((prev) => [...prev.slice(0, -1), { ...prev[prev.length - 1], ...update(prev[prev.length - 1]) }]);
     try {
       const metrics = await streamChat(
         { model_id: modelId, messages, temperature, max_tokens: maxTokens },
-        (delta) =>
-          setTurns((prev) => {
-            const next = [...prev];
-            const last = next[next.length - 1];
-            next[next.length - 1] = { ...last, content: last.content + delta };
-            return next;
-          }),
+        (delta) => patchLast((t) => ({ content: t.content + delta })),
         abort.current.signal,
+        (thinking) => patchLast((t) => ({ reasoning: (t.reasoning ?? "") + thinking })),
       );
-      setTurns((prev) => {
-        const next = [...prev];
-        next[next.length - 1] = { ...next[next.length - 1], metrics };
-        return next;
-      });
+      patchLast(() => ({ metrics }));
     } catch (e) {
       if ((e as Error).name === "AbortError") return;
       const message = (e as Error).message;
-      setTurns((prev) => {
-        const next = [...prev];
-        next[next.length - 1] = { ...next[next.length - 1], error: message };
-        return next;
-      });
+      patchLast(() => ({ error: message }));
       toast.error(message);
     } finally {
       setStreaming(false);
@@ -189,18 +181,31 @@ export function PlaygroundView() {
             )}
             {turns.map((t, i) => (
               <div key={i} className={cn("flex", t.role === "user" ? "justify-end" : "justify-start")}>
-                <div className={cn("max-w-[85%] space-y-1.5", t.role === "user" && "text-right")}>
+                <div className={cn("max-w-[85%] min-w-0 space-y-1.5", t.role === "user" && "text-right")}>
+                  {t.reasoning && (
+                    <details className="text-muted-foreground group rounded-lg border px-3 py-2 text-left text-xs" open={!t.content}>
+                      <summary className="cursor-pointer select-none font-medium">
+                        {t.content || !streaming ? "Thought process" : "Thinking…"}
+                      </summary>
+                      <div className="mt-2 max-h-60 overflow-y-auto leading-relaxed whitespace-pre-wrap">{t.reasoning}</div>
+                    </details>
+                  )}
                   <div
                     className={cn(
-                      "inline-block rounded-2xl px-4 py-2.5 text-left text-sm leading-relaxed whitespace-pre-wrap",
-                      t.role === "user" ? "bg-foreground text-background rounded-br-sm" : "bg-muted rounded-bl-sm",
+                      "inline-block max-w-full rounded-2xl px-4 py-2.5 text-left text-sm leading-relaxed",
+                      t.role === "user" ? "bg-foreground text-background rounded-br-sm whitespace-pre-wrap" : "bg-muted rounded-bl-sm",
                       t.error && "border-destructive/40 bg-destructive/10 text-destructive border",
                     )}
                   >
-                    {t.error ?? (t.content || (streaming && i === turns.length - 1 ? <span className="animate-pulse">▍</span> : ""))}
+                    {t.error ??
+                      (t.role === "assistant" && t.content ? (
+                        <Markdown>{t.content}</Markdown>
+                      ) : (
+                        t.content || (streaming && i === turns.length - 1 ? <span className="animate-pulse">▍</span> : "")
+                      ))}
                   </div>
                   {t.metrics && (
-                    <div className="text-muted-foreground tabular flex gap-3 px-1 text-[11px]">
+                    <div className="text-muted-foreground tabular flex flex-wrap gap-x-3 px-1 text-[11px]">
                       <span>first token {ms(t.metrics.ttft_ms)}</span>
                       <span>{tps(t.metrics.tokens_per_sec)}</span>
                       <span>
@@ -208,6 +213,7 @@ export function PlaygroundView() {
                         {t.metrics.tokens_estimated ? "~" : ""} tokens
                       </span>
                       <span>{ms(t.metrics.latency_ms)} total</span>
+                      {t.metrics.truncated && <span className="text-amber-600 dark:text-amber-400">cut off at max tokens</span>}
                     </div>
                   )}
                 </div>

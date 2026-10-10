@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS suites (id TEXT PRIMARY KEY, data TEXT NOT NULL, crea
 CREATE TABLE IF NOT EXISTS runs (
     id TEXT PRIMARY KEY, model_id TEXT NOT NULL, name TEXT NOT NULL, status TEXT NOT NULL,
     config TEXT NOT NULL, total INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL,
-    started_at TEXT, finished_at TEXT, error TEXT
+    started_at TEXT, finished_at TEXT, error TEXT, summary TEXT
 );
 CREATE TABLE IF NOT EXISTS samples (
     id INTEGER PRIMARY KEY AUTOINCREMENT, run_id TEXT NOT NULL, suite_id TEXT NOT NULL,
@@ -64,6 +64,10 @@ def init() -> None:
     with connect() as c:
         c.execute("PRAGMA journal_mode=WAL")
         c.executescript(SCHEMA)
+        # Databases created before summaries were stored (v0.1.0)
+        columns = {r["name"] for r in c.execute("PRAGMA table_info(runs)")}
+        if "summary" not in columns:
+            c.execute("ALTER TABLE runs ADD COLUMN summary TEXT")
 
 
 def recover_interrupted() -> None:
@@ -140,7 +144,7 @@ def insert_run(run_id: str, model_id: str, name: str, config: RunConfig, total: 
 
 
 def update_run(run_id: str, **fields: Any) -> None:
-    allowed = {"status", "started_at", "finished_at", "error", "total"}
+    allowed = {"status", "started_at", "finished_at", "error", "total", "summary"}
     keys = [k for k in fields if k in allowed]
     if not keys:
         return

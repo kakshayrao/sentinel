@@ -394,6 +394,8 @@ SYNC = {
 
 
 async def score(suite: SuiteInfo, item: Item, response: str, judge: Any = None) -> Score:
+    if re.match(r"\s*<think>", response, flags=re.I) and not re.search(r"</think>", response, flags=re.I):
+        return Score(0.0, False, "Still reasoning when the token limit was reached. Raise max output tokens.")
     answer = strip_reasoning(response)
     if suite.scorer == "code":
         return await score_code(item, answer)

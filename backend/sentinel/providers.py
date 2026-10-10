@@ -32,7 +32,9 @@ KNOWN_SERVERS = [
 
 
 class ProviderError(Exception):
-    pass
+    def __init__(self, message: str, retryable: bool = False):
+        super().__init__(message)
+        self.retryable = retryable  # transient: worth retrying (connection drop, 429, 5xx, timeout)
 
 
 @dataclass
@@ -42,6 +44,7 @@ class Completion:
     ttft_ms: int | None
     output_tokens: int
     tokens_estimated: bool
+    truncated: bool = False  # stopped by max_tokens
 
     @property
     def tokens_per_sec(self) -> float | None:
@@ -55,14 +58,62 @@ def estimate_tokens(text: str) -> int:
     return max(1, round(len(text) / 4)) if text else 0
 
 
+async def collect(events: AsyncIterator[dict]) -> Completion:
+    """Consumes a provider stream and measures it. Reasoning tokens count toward time to
+    first token but are not part of the answer."""
+    start = time.perf_counter()
+    first: float | None = None
+    parts: list[str] = []
+    reasoning_chars = 0
+    tokens: int | None = None
+    finish: str | None = None
+    async for event in events:
+        if "delta" in event or "reasoning" in event:
+            first = first or time.perf_counter()
+            if "delta" in event:
+                parts.append(event["delta"])
+            else:
+                reasoning_chars += len(event["reasoning"])
+        elif "usage" in event and isinstance(event["usage"].get("completion_tokens"), int):
+            tokens = event["usage"]["completion_tokens"]
+        elif "finish" in event:
+            finish = event["finish"]
+    end = time.perf_counter()
+    text = "".join(parts)
+    return Completion(
+        text=text,
+        latency_ms=round((end - start) * 1000),
+        ttft_ms=round((first - start) * 1000) if first else None,
+        output_tokens=tokens if tokens is not None else estimate_tokens(text) + round(reasoning_chars / 4),
+        tokens_estimated=tokens is None,
+        truncated=finish == "length",
+    )
+
+
 class OpenAICompatible:
+    RETRY_DELAYS = (1.0, 3.0)  # seconds before the 2nd and 3rd attempt
+
     def __init__(self, base_url: str, model: str, api_key: str | None = None):
         self.base_url = base_url.rstrip("/")
         self.model = model
         self.headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
+        self._client: httpx.AsyncClient | None = None
+
+    @property
+    def client(self) -> httpx.AsyncClient:
+        # One keep-alive client per provider: no reconnect per request, steadier timings
+        if self._client is None:
+            self._client = httpx.AsyncClient(timeout=TIMEOUT)
+        return self._client
+
+    async def aclose(self) -> None:
+        if self._client is not None:
+            await self._client.aclose()
+            self._client = None
 
     async def stream(self, messages: list[dict], *, temperature: float, max_tokens: int) -> AsyncIterator[dict]:
-        """Yields {"delta": str} chunks, then {"usage": {...}} if the server reports it."""
+        """Yields {"delta"} answer chunks, {"reasoning"} chunks from thinking models,
+        then {"finish": reason} and {"usage": {...}} when the server reports them."""
         body = {
             "model": self.model,
             "messages": messages,
@@ -72,60 +123,55 @@ class OpenAICompatible:
             "stream_options": {"include_usage": True},
         }
         try:
-            async with httpx.AsyncClient(timeout=TIMEOUT) as client:
-                async with client.stream(
-                    "POST", f"{self.base_url}/chat/completions", json=body, headers=self.headers
-                ) as res:
-                    if res.status_code >= 400:
-                        detail = (await res.aread()).decode(errors="replace")[:300]
-                        raise ProviderError(f"HTTP {res.status_code} from {self.base_url}: {detail}")
-                    async for line in res.aiter_lines():
-                        if not line.startswith("data:"):
-                            continue
-                        data = line[5:].strip()
-                        if data == "[DONE]":
-                            break
-                        try:
-                            chunk = json.loads(data)
-                        except json.JSONDecodeError:
-                            continue
-                        if chunk.get("error"):
-                            raise ProviderError(str(chunk["error"])[:300])
-                        for choice in chunk.get("choices") or []:
-                            delta = (choice.get("delta") or {}).get("content")
-                            if delta:
-                                yield {"delta": delta}
-                        if chunk.get("usage"):
-                            yield {"usage": chunk["usage"]}
+            async with self.client.stream(
+                "POST", f"{self.base_url}/chat/completions", json=body, headers=self.headers
+            ) as res:
+                if res.status_code >= 400:
+                    detail = (await res.aread()).decode(errors="replace")[:300]
+                    raise ProviderError(
+                        f"HTTP {res.status_code} from {self.base_url}: {detail}",
+                        retryable=res.status_code == 429 or res.status_code >= 500,
+                    )
+                async for line in res.aiter_lines():
+                    if not line.startswith("data:"):
+                        continue
+                    data = line[5:].strip()
+                    if data == "[DONE]":
+                        break
+                    try:
+                        chunk = json.loads(data)
+                    except json.JSONDecodeError:
+                        continue
+                    if chunk.get("error"):
+                        raise ProviderError(str(chunk["error"])[:300])
+                    for choice in chunk.get("choices") or []:
+                        delta = choice.get("delta") or {}
+                        # Ollama sends "reasoning"; vLLM and LM Studio send "reasoning_content"
+                        thinking = delta.get("reasoning_content") or delta.get("reasoning")
+                        if thinking:
+                            yield {"reasoning": thinking}
+                        if delta.get("content"):
+                            yield {"delta": delta["content"]}
+                        if choice.get("finish_reason"):
+                            yield {"finish": choice["finish_reason"]}
+                    if chunk.get("usage"):
+                        yield {"usage": chunk["usage"]}
         except httpx.ConnectError as e:
-            raise ProviderError(f"Cannot reach {self.base_url}. Is the model server running?") from e
+            raise ProviderError(f"Cannot reach {self.base_url}. Is the model server running?", retryable=True) from e
         except httpx.TimeoutException as e:
-            raise ProviderError(f"Timed out waiting for {self.base_url}") from e
+            raise ProviderError(f"Timed out waiting for {self.base_url}", retryable=True) from e
         except httpx.HTTPError as e:
-            raise ProviderError(f"{type(e).__name__}: {e}") from e
+            raise ProviderError(f"{type(e).__name__}: {e}", retryable=True) from e
 
     async def complete(self, messages: list[dict], *, temperature: float, max_tokens: int) -> Completion:
-        start = time.perf_counter()
-        first: float | None = None
-        parts: list[str] = []
-        usage: dict | None = None
-        async for event in self.stream(messages, temperature=temperature, max_tokens=max_tokens):
-            if "delta" in event:
-                if first is None:
-                    first = time.perf_counter()
-                parts.append(event["delta"])
-            else:
-                usage = event["usage"]
-        end = time.perf_counter()
-        text = "".join(parts)
-        tokens = (usage or {}).get("completion_tokens")
-        return Completion(
-            text=text,
-            latency_ms=round((end - start) * 1000),
-            ttft_ms=round((first - start) * 1000) if first else None,
-            output_tokens=tokens if isinstance(tokens, int) else estimate_tokens(text),
-            tokens_estimated=not isinstance(tokens, int),
-        )
+        for delay in (*self.RETRY_DELAYS, None):
+            try:
+                return await collect(self.stream(messages, temperature=temperature, max_tokens=max_tokens))
+            except ProviderError as e:
+                if not e.retryable or delay is None:
+                    raise
+                await asyncio.sleep(delay)
+        raise AssertionError("unreachable")
 
 
 class RandomBaseline:
@@ -152,30 +198,17 @@ class RandomBaseline:
     async def stream(self, messages: list[dict], *, temperature: float, max_tokens: int) -> AsyncIterator[dict]:
         await asyncio.sleep(0.15)
         words = self._reply(messages).split(" ")
-        for i, word in enumerate(words):
+        for i, word in enumerate(words[:max_tokens]):
             await asyncio.sleep(0.012)
             yield {"delta": word if i == 0 else " " + word}
-        yield {"usage": {"completion_tokens": len(words)}}
+        yield {"finish": "length" if len(words) > max_tokens else "stop"}
+        yield {"usage": {"completion_tokens": min(len(words), max_tokens)}}
 
     async def complete(self, messages: list[dict], *, temperature: float, max_tokens: int) -> Completion:
-        start = time.perf_counter()
-        first = None
-        parts = []
-        tokens = 0
-        async for event in self.stream(messages, temperature=temperature, max_tokens=max_tokens):
-            if "delta" in event:
-                first = first or time.perf_counter()
-                parts.append(event["delta"])
-            else:
-                tokens = event["usage"]["completion_tokens"]
-        end = time.perf_counter()
-        return Completion(
-            text="".join(parts),
-            latency_ms=round((end - start) * 1000),
-            ttft_ms=round((first - start) * 1000) if first else None,
-            output_tokens=tokens,
-            tokens_estimated=False,
-        )
+        return await collect(self.stream(messages, temperature=temperature, max_tokens=max_tokens))
+
+    async def aclose(self) -> None:
+        pass
 
 
 Provider = OpenAICompatible | RandomBaseline
@@ -192,6 +225,15 @@ def build_provider(model: Model) -> Provider:
         if not api_key:
             raise ProviderError(f"Environment variable {model.api_key_env} is not set")
     return OpenAICompatible(model.base_url, model.model, api_key)
+
+
+async def complete_once(model: Model, messages: list[dict], *, temperature: float, max_tokens: int) -> Completion:
+    """One-off request (connection test, arena) that closes its connection afterwards."""
+    provider = build_provider(model)
+    try:
+        return await provider.complete(messages, temperature=temperature, max_tokens=max_tokens)
+    finally:
+        await provider.aclose()
 
 
 async def list_server_models(base_url: str, timeout: float = 3.0) -> list[str]:

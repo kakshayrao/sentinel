@@ -184,9 +184,9 @@ export function CompareView() {
                   <Card className="gap-1 p-5">
                     <div className="text-muted-foreground text-sm">Average latency</div>
                     <div className="mt-2 flex items-baseline gap-3">
-                      <span className="tabular text-muted-foreground text-2xl">{ms(a.summary.perf.avg_latency_ms ? Math.round(a.summary.perf.avg_latency_ms) : null)}</span>
+                      <span className="tabular text-muted-foreground text-2xl">{ms(a.summary.perf.avg_latency_ms)}</span>
                       <ArrowRightIcon className="text-muted-foreground size-4" />
-                      <span className="tabular text-2xl font-semibold">{ms(b.summary.perf.avg_latency_ms ? Math.round(b.summary.perf.avg_latency_ms) : null)}</span>
+                      <span className="tabular text-2xl font-semibold">{ms(b.summary.perf.avg_latency_ms)}</span>
                     </div>
                     <Delta
                       value={a.summary.perf.avg_latency_ms && b.summary.perf.avg_latency_ms ? b.summary.perf.avg_latency_ms - a.summary.perf.avg_latency_ms : null}

@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { GitCompareIcon, ListChecksIcon, MoreHorizontalIcon, PlayIcon, RotateCcwIcon, SearchIcon, Trash2Icon } from "lucide-react";
 
 import { ScoreBadge, StatusBadge } from "@/components/badges";
+import { useConfirm } from "@/components/confirm";
 import { PageBody, PageHeader } from "@/components/page-header";
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states";
 import { Button } from "@/components/ui/button";
@@ -25,9 +26,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { api, useRuns } from "@/lib/api";
 import { duration, timeAgo, tps } from "@/lib/format";
 import type { Run, RunStatus } from "@/lib/types";
+import { clickableRow } from "@/lib/utils";
 
 function RunActions({ run, onChange }: { run: Run; onChange: () => void }) {
   const router = useRouter();
+  const [ask, confirmDialog] = useConfirm();
 
   async function rerun() {
     try {
@@ -40,7 +43,8 @@ function RunActions({ run, onChange }: { run: Run; onChange: () => void }) {
   }
 
   async function remove() {
-    if (!confirm(`Delete "${run.name}" and all of its results?`)) return;
+    const ok = await ask({ title: "Delete this run?", description: `${run.model_name} · ${run.name}. All of its answers and scores will be removed.`, confirmLabel: "Delete", destructive: true });
+    if (!ok) return;
     try {
       await api.del(`/runs/${run.id}`);
       toast.success("Run deleted");
@@ -51,6 +55,8 @@ function RunActions({ run, onChange }: { run: Run; onChange: () => void }) {
   }
 
   return (
+    <>
+    {confirmDialog}
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="size-8" aria-label="Run actions" onClick={(e) => e.stopPropagation()}>
@@ -72,6 +78,7 @@ function RunActions({ run, onChange }: { run: Run; onChange: () => void }) {
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+    </>
   );
 }
 
@@ -163,7 +170,7 @@ export function RunsView() {
                   const active = r.status === "running" || r.status === "queued";
                   const progress = r.summary.total ? (r.summary.completed / r.summary.total) * 100 : 0;
                   return (
-                    <TableRow key={r.id} className="cursor-pointer" onClick={() => router.push(`/runs/${r.id}`)}>
+                    <TableRow key={r.id} {...clickableRow(() => router.push(`/runs/${r.id}`))}>
                       <TableCell className="max-w-0 pl-6">
                         <div className="truncate font-medium">{r.model_name}</div>
                         <div className="text-muted-foreground truncate text-xs">

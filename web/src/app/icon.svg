@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <style>
+    .shield { fill: #0a0a0a; } .eye { fill: #ffffff; }
+    @media (prefers-color-scheme: dark) { .shield { fill: #ffffff; } .eye { fill: #0a0a0a; } }
+  </style>
+  <path class="shield" d="M12 2.5 4 5.6v5.9c0 4.9 3.4 8.9 8 10 4.6-1.1 8-5.1 8-10V5.6L12 2.5Z"/>
+  <path class="eye" d="M6.9 12.2c1.3-2 3-3 5.1-3s3.8 1 5.1 3c-1.3 2-3 3-5.1 3s-3.8-1-5.1-3Z"/>
+  <circle class="shield" cx="12" cy="12.2" r="1.6"/>
+</svg>

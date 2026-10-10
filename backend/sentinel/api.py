@@ -123,8 +123,8 @@ def delete_model(model_id: str) -> Response:
 async def test_model(model_id: str) -> ModelTestResult:
     model = _model_or_404(model_id)
     try:
-        completion = await providers.build_provider(model).complete(
-            [{"role": "user", "content": "Reply with the single word: pong"}], temperature=0.0, max_tokens=64
+        completion = await providers.complete_once(
+            model, [{"role": "user", "content": "Reply with the single word: pong"}], temperature=0.0, max_tokens=64
         )
         return ModelTestResult(ok=True, latency_ms=completion.latency_ms, response=completion.text[:500])
     except Exception as e:
@@ -201,10 +201,7 @@ async def hub_import(body: HubImportIn) -> SuiteInfo:
 
 @api.get("/runs")
 def list_runs() -> list[Run]:
-    rows = db.list_run_rows()
-    samples = db.samples_by_run([r["id"] for r in rows])
-    models = _models()
-    return [runner.to_run(r, samples[r["id"]], models) for r in rows]
+    return runner.load_runs(db.list_run_rows(), _models())
 
 
 @api.post("/runs", status_code=201)
@@ -234,7 +231,7 @@ async def cancel_run(run_id: str) -> Run:
     if task:
         task.cancel()
     elif row["status"] in ("queued", "running"):
-        db.update_run(run_id, status="cancelled", finished_at=db.now())
+        runner.finish(run_id, "cancelled")
     row = db.get_run_row(run_id) | ({"status": "cancelled"} if task else {})
     return runner.to_run(row, db.list_samples(run_id), _models())
 
@@ -268,12 +265,22 @@ def run_report(run_id: str) -> PlainTextResponse:
     return PlainTextResponse(runner.report_markdown(detail), media_type="text/markdown")
 
 
+@api.get("/runs/{run_id}/samples.csv", response_class=PlainTextResponse)
+def run_csv(run_id: str) -> PlainTextResponse:
+    detail = runner.to_detail(_run_or_404(run_id), db.list_samples(run_id), _models())
+    return PlainTextResponse(
+        runner.samples_csv(detail),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="sentinel-run-{run_id}.csv"'},
+    )
+
+
 # ------------------------------------------------------------- playground
 
 
 @api.post("/chat")
 async def chat(body: ChatIn) -> StreamingResponse:
-    """Streams NDJSON lines: {"delta": "..."} chunks, then {"done": true, "metrics": {...}}."""
+    """Streams NDJSON lines: {"delta"} and {"reasoning"} chunks, then {"done": true, "metrics": {...}}."""
     model = _model_or_404(body.model_id)
     try:
         provider = providers.build_provider(model)
@@ -286,17 +293,22 @@ async def chat(body: ChatIn) -> StreamingResponse:
         first = None
         tokens = None
         chars = 0
+        finish = None
         try:
             async for event in provider.stream(messages, temperature=body.temperature, max_tokens=body.max_tokens):
-                if "delta" in event:
+                if "delta" in event or "reasoning" in event:
                     first = first or time.perf_counter()
-                    chars += len(event["delta"])
-                    yield json.dumps({"delta": event["delta"]}) + "\n"
+                    chars += len(event.get("delta") or event.get("reasoning"))
+                    yield json.dumps(event) + "\n"
+                elif "finish" in event:
+                    finish = event["finish"]
                 elif isinstance(event["usage"].get("completion_tokens"), int):
                     tokens = event["usage"]["completion_tokens"]
         except Exception as e:
             yield json.dumps({"error": str(e)[:500]}) + "\n"
             return
+        finally:
+            await provider.aclose()
         end = time.perf_counter()
         estimated = tokens is None
         tokens = tokens if tokens is not None else providers.estimate_tokens("x" * chars)
@@ -307,6 +319,7 @@ async def chat(body: ChatIn) -> StreamingResponse:
             "output_tokens": tokens,
             "tokens_per_sec": tokens / gen if gen > 0 and tokens else None,
             "tokens_estimated": estimated,
+            "truncated": finish == "length",
         }}) + "\n"
 
     return StreamingResponse(events(), media_type="application/x-ndjson")
@@ -344,10 +357,8 @@ def leaderboard() -> list[LeaderboardRow]:
 
 @api.get("/overview")
 def overview() -> Overview:
-    rows = db.list_run_rows()
-    samples = db.samples_by_run([r["id"] for r in rows])
     models = _models()
-    runs = [runner.to_run(r, samples[r["id"]], models) for r in rows]
+    runs = runner.load_runs(db.list_run_rows(), models)
     completed = [r for r in runs if r.status == "completed" and r.model_id in models]
     # Latest completed score per model x suite (runs are newest first)
     matrix: dict[tuple[str, str], MatrixCell] = {}

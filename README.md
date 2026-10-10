@@ -15,15 +15,20 @@ side-by-side comparisons and a blind arena, all in one dashboard.
 - **Ten scorers.** Multiple choice, numeric, exact match, contains, token F1 (SQuAD), ROUGE-L, JSON
   fields, IFEval-style instruction checks, unit tests (pass@1), and an LLM judge.
 - **Speed.** Every answer is streamed, so each run reports latency (avg, p50, p95), time to first
-  token and output tokens per second.
+  token and output tokens per second. A warm-up request runs first, so model load time doesn't skew
+  the numbers and an unreachable server fails the run immediately.
+- **Honest numbers.** Every benchmark score comes with a 95% confidence interval, so you can tell a
+  real improvement from noise on small samples.
 - **Runs and comparison.** Evaluate several models at once, then compare any two runs: score change
   per benchmark, speed change, and exactly which items got fixed or regressed.
 - **Leaderboard.** A model-by-benchmark heatmap of the latest scores.
 - **Playground.** Chat with any model and watch its speed live.
 - **Arena.** Blind A/B battles. Your votes become Elo ratings, the method behind Chatbot Arena.
 - **CLI and CI gate.** `sentinel run ... --fail-below 0.6` exits non-zero when a checkpoint regresses.
-- **Reasoning models.** `<think>` blocks from models like Qwen3 and DeepSeek-R1 are stripped before
-  grading.
+- **Reasoning models.** Thinking from models like Qwen3 and DeepSeek-R1 is kept out of grading,
+  shown in a collapsible block in the playground, and flagged when the token limit cuts it off.
+- **Export.** Download any run as a Markdown report or a CSV of every answer.
+- **Resilient.** Transient server errors (connection drops, 429, 5xx) are retried with backoff.
 - **Works offline.** A built-in random baseline lets you try everything without a model server, and
   shows the chance-level score of each benchmark.
 
@@ -32,6 +37,8 @@ side-by-side comparisons and a blind arena, all in one dashboard.
 | ![Run](docs/screenshots/run.png) | ![Compare](docs/screenshots/compare.png) |
 | **Benchmarks** | **New run** |
 | ![Benchmarks](docs/screenshots/benchmarks.png) | ![New run](docs/screenshots/new-run.png) |
+| **Light theme** | **Playground** |
+| ![Light theme](docs/screenshots/overview-light.png) | ![Playground](docs/screenshots/playground.png) |
 
 ## Quick start
 
@@ -156,7 +163,7 @@ cd web && pnpm lint && pnpm build
 
 ## Roadmap
 
-- pass@k with multiple samples, and confidence intervals on scores
+- pass@k with multiple samples
 - Few-shot prompting and chat templates per benchmark
 - RAG evaluation (faithfulness and context relevance)
 - GPU and memory monitoring during runs

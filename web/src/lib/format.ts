@@ -38,20 +38,24 @@ export function dateTime(iso: string | null | undefined): string {
   });
 }
 
-/** Duration between two ISO strings (end defaults to now): "1m 12s" */
-export function duration(start: string | null | undefined, end?: string | null): string {
-  if (!start) return "—";
-  const ms = (end ? new Date(end).getTime() : Date.now()) - new Date(start).getTime();
-  const s = Math.max(0, Math.round(ms / 1000));
+/** Milliseconds as "45s", "3m 20s" or "1h 5m". */
+export function span(milliseconds: number): string {
+  const s = Math.max(0, Math.round(milliseconds / 1000));
   if (s < 60) return `${s}s`;
   const m = Math.floor(s / 60);
   if (m < 60) return `${m}m ${s % 60}s`;
   return `${Math.floor(m / 60)}h ${m % 60}m`;
 }
 
+/** Duration between two ISO strings (end defaults to now): "1m 12s" */
+export function duration(start: string | null | undefined, end?: string | null): string {
+  if (!start) return "—";
+  return span((end ? new Date(end).getTime() : Date.now()) - new Date(start).getTime());
+}
+
 export function ms(value: number | null | undefined): string {
   if (value == null) return "—";
-  return value < 1000 ? `${value} ms` : `${(value / 1000).toFixed(1)} s`;
+  return value < 1000 ? `${Math.round(value)} ms` : `${(value / 1000).toFixed(1)} s`;
 }
 
 /** "grade_school_math" -> "Grade school math" */

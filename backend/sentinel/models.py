@@ -146,6 +146,7 @@ class SuiteScore(BaseModel):
     n: int  # scored items (errors excluded)
     errors: int
     score: float  # mean score 0..1
+    margin: float = 0.0  # 95% confidence interval half-width, same units as score
     passed: int  # items with passed == True
 
 
@@ -165,6 +166,7 @@ class RunSummary(BaseModel):
     completed: int  # recorded results, including errors
     errors: int
     score: float  # macro average of suite scores, 0..1
+    margin: float = 0.0  # 95% confidence interval half-width of the overall score
     by_suite: list[SuiteScore]
     perf: PerfStats
 

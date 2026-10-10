@@ -117,11 +117,13 @@ export function useRun(id: string | null) {
   });
 }
 
-/** Streams a playground reply. Calls onDelta per chunk and resolves with the speed metrics. */
+/** Streams a playground reply. Calls onDelta per answer chunk (and onReasoning for thinking
+ * models) and resolves with the speed metrics. */
 export async function streamChat(
   body: { model_id: string; messages: ChatMessage[]; temperature: number; max_tokens: number },
   onDelta: (text: string) => void,
   signal?: AbortSignal,
+  onReasoning?: (text: string) => void,
 ): Promise<ChatMetrics | null> {
   const res = await fetch("/api/chat", {
     method: "POST",
@@ -145,6 +147,7 @@ export async function streamChat(
       const event = JSON.parse(line);
       if (event.error) throw new ApiError(502, event.error);
       if (event.delta) onDelta(event.delta);
+      if (event.reasoning) onReasoning?.(event.reasoning);
       if (event.done) metrics = event.metrics;
     }
   }

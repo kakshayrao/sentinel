@@ -62,10 +62,12 @@ def cmd_run(args: argparse.Namespace) -> None:
 
     detail = runner.to_detail(db.get_run_row(run_id), db.list_samples(run_id), {model.id: model})
     s = detail.summary
-    print(f"\n{'Benchmark':<34}{'Items':>7}{'Score':>9}")
+    if detail.error:
+        print(f"\nRun failed: {detail.error}")
+    print(f"\n{'Benchmark':<34}{'Items':>7}{'Score':>9}{'95% CI':>10}")
     for b in s.by_suite:
-        print(f"{b.name[:33]:<34}{b.n:>7}{b.score * 100:>8.1f}%")
-    print(f"{'Overall':<34}{s.completed - s.errors:>7}{s.score * 100:>8.1f}%")
+        print(f"{b.name[:33]:<34}{b.n:>7}{b.score * 100:>8.1f}%{'±':>5}{b.margin * 100:>5.1f}")
+    print(f"{'Overall':<34}{s.completed - s.errors:>7}{s.score * 100:>8.1f}%{'±':>5}{s.margin * 100:>5.1f}")
     if s.perf.tokens_per_sec:
         print(f"\nSpeed: {s.perf.tokens_per_sec:.1f} tokens/s, avg latency {s.perf.avg_latency_ms:.0f} ms")
     if s.errors:

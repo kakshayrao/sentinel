@@ -4,13 +4,17 @@ import time
 import pytest
 from fastapi.testclient import TestClient
 
-from sentinel import db, scorers, suites
+import asyncio
+import sqlite3
+
+from sentinel import db, providers, runner, scorers, suites
 from sentinel.models import Item, SuiteInfo
 
 
 @pytest.fixture(autouse=True)
-def database(tmp_path):
+def database(tmp_path, monkeypatch):
     db.configure(str(tmp_path / "test.db"))
+    monkeypatch.setattr(providers.OpenAICompatible, "RETRY_DELAYS", (0.0, 0.0))
 
 
 @pytest.fixture()
@@ -123,7 +127,7 @@ def test_run_validation(client):
     assert res.status_code == 400
 
 
-def test_coding_run_with_judge_and_unreachable_model(client):
+def test_coding_run_with_judge(client):
     baseline = client.post("/api/models/baseline").json()
     res = client.post("/api/runs", json={"model_ids": [baseline["id"]], "config": {
         "suite_ids": ["python-coding", "helpfulness"], "limit": 2, "allow_code_execution": True,
@@ -131,12 +135,6 @@ def test_coding_run_with_judge_and_unreachable_model(client):
     run = wait_for(client, res.json()[0]["id"])
     assert run["status"] == "completed"
     assert all(s["passed"] is False for s in run["samples"] if s["suite_id"] == "python-coding")
-
-    offline = client.post("/api/models", json={"name": "offline", "base_url": "http://127.0.0.1:9/v1", "model": "x"}).json()
-    res = client.post("/api/runs", json={"model_ids": [offline["id"]], "config": {"suite_ids": ["general-knowledge"], "limit": 2}})
-    run = wait_for(client, res.json()[0]["id"])
-    assert run["status"] == "failed" and "Cannot reach" in run["error"]
-    assert client.post(f"/api/models/{offline['id']}/test").json()["ok"] is False
 
 
 def test_custom_suite_upload(client):
@@ -166,3 +164,100 @@ def test_arena_and_chat(client):
     assert any("delta" in e for e in events) and events[-1]["done"] is True
     assert events[-1]["metrics"]["output_tokens"] > 0
     assert a["id"] != b["id"]
+
+
+# ------------------------------------------------------- engine details
+
+
+async def _events(*events):
+    for e in events:
+        await asyncio.sleep(0.01)
+        yield e
+
+
+def test_collect_measures_reasoning_and_truncation():
+    c = asyncio.run(providers.collect(_events(
+        {"reasoning": "thinking..."}, {"delta": "Answer: 7"}, {"finish": "length"},
+        {"usage": {"completion_tokens": 42}},
+    )))
+    assert c.text == "Answer: 7"  # reasoning is not part of the answer
+    assert c.ttft_ms is not None and c.ttft_ms < c.latency_ms  # first token = first reasoning token
+    assert c.output_tokens == 42 and not c.tokens_estimated
+    assert c.truncated
+
+
+def test_retries_only_transient_errors(monkeypatch):
+    p = providers.OpenAICompatible("http://x/v1", "m")
+    calls = []
+
+    def flaky(error):
+        async def stream(*args, **kwargs):
+            calls.append(1)
+            if len(calls) < 3:
+                raise error
+            yield {"delta": "ok"}
+        return stream
+
+    monkeypatch.setattr(p, "stream", flaky(providers.ProviderError("HTTP 503", retryable=True)))
+    assert asyncio.run(p.complete([], temperature=0, max_tokens=8)).text == "ok"
+    assert len(calls) == 3
+
+    calls.clear()
+    monkeypatch.setattr(p, "stream", flaky(providers.ProviderError("HTTP 400 bad request")))
+    with pytest.raises(providers.ProviderError):
+        asyncio.run(p.complete([], temperature=0, max_tokens=8))
+    assert len(calls) == 1
+
+
+def test_reasoning_cut_off_and_margins():
+    suite = suites.get_suite("grade-school-math")
+    result = asyncio.run(scorers.score(suite, suite.items[0], "<think>Let me compute 48 * 3/4"))
+    assert not result.passed and "token limit" in result.detail
+
+    rows = [{"suite_id": "s", "error": None, "score": v, "passed": v, "latency_ms": 10, "ttft_ms": 5,
+             "output_tokens": 3, "tokens_estimated": 0} for v in (1, 0, 1, 1)]
+    summary = runner.summarize(4, rows, ["s"])
+    assert summary.by_suite[0].score == 0.75
+    assert 0.4 < summary.by_suite[0].margin < 0.6  # 1.96 * 0.5 / sqrt(4)
+    assert runner.summarize(1, rows[:1], ["s"]).by_suite[0].margin == 0.0
+
+
+def test_old_database_gets_summary_column(tmp_path):
+    path = tmp_path / "old.db"
+    with sqlite3.connect(path) as c:
+        c.execute("CREATE TABLE runs (id TEXT PRIMARY KEY, model_id TEXT NOT NULL, name TEXT NOT NULL, "
+                  "status TEXT NOT NULL, config TEXT NOT NULL, total INTEGER NOT NULL DEFAULT 0, "
+                  "created_at TEXT NOT NULL, started_at TEXT, finished_at TEXT, error TEXT)")
+    db.configure(str(path))
+    with sqlite3.connect(path) as c:
+        assert "summary" in {r[1] for r in c.execute("PRAGMA table_info(runs)")}
+
+
+def test_summaries_are_stored_and_csv_export(client):
+    baseline = client.post("/api/models/baseline").json()
+    res = client.post("/api/runs", json={"model_ids": [baseline["id"]], "config": {
+        "suite_ids": ["summarization", "general-knowledge"], "limit": 3, "max_tokens": 16}})
+    run = wait_for(client, res.json()[0]["id"])
+    assert run["status"] == "completed"
+    assert db.get_run_row(run["id"])["summary"]  # stored at completion
+
+    # Baseline summaries are ~30 words, so a 16-token limit truncates them
+    truncated = [s for s in run["samples"] if s["suite_id"] == "summarization"]
+    assert all("max token limit" in s["detail"] for s in truncated)
+
+    # Listings read the stored summary instead of the samples
+    with db.connect() as c:
+        c.execute("DELETE FROM samples WHERE run_id=?", (run["id"],))
+    listed = next(r for r in client.get("/api/runs").json() if r["id"] == run["id"])
+    assert listed["summary"]["completed"] == 6
+
+    csv_text = client.get(f"/api/runs/{run['id']}/samples.csv").text
+    assert csv_text.splitlines()[0].startswith("suite_id,item_id,passed,score")
+
+
+def test_unreachable_server_fails_fast(client):
+    offline = client.post("/api/models", json={"name": "offline", "base_url": "http://127.0.0.1:9/v1", "model": "x"}).json()
+    res = client.post("/api/runs", json={"model_ids": [offline["id"]], "config": {"suite_ids": ["general-knowledge"]}})
+    run = wait_for(client, res.json()[0]["id"])
+    assert run["status"] == "failed" and "Cannot reach" in run["error"]
+    assert run["samples"] == []  # stopped at the warm-up, not after 30 failed questions

@@ -7,7 +7,8 @@ import random
 
 from . import db
 from .models import Battle, BattleIn, BattleSide, LeaderboardRow, Model
-from .providers import build_provider
+from .providers import complete_once
+from .scorers import strip_reasoning
 
 K = 32
 START = 1000.0
@@ -15,10 +16,11 @@ START = 1000.0
 
 async def _answer(model: Model, body: BattleIn) -> BattleSide:
     try:
-        completion = await build_provider(model).complete(
-            [{"role": "user", "content": body.prompt}], temperature=body.temperature, max_tokens=body.max_tokens
+        completion = await complete_once(
+            model, [{"role": "user", "content": body.prompt}], temperature=body.temperature, max_tokens=body.max_tokens
         )
-        return BattleSide(response=completion.text, latency_ms=completion.latency_ms,
+        # Judge answers, not reasoning: inline <think> blocks would reveal which model is which
+        return BattleSide(response=strip_reasoning(completion.text), latency_ms=completion.latency_ms,
                           tokens_per_sec=completion.tokens_per_sec, model_id=model.id, model_name=model.name)
     except Exception as e:
         return BattleSide(response=None, error=str(e)[:300], model_id=model.id, model_name=model.name)

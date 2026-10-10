@@ -19,7 +19,8 @@ import {
   Trash2Icon,
 } from "lucide-react";
 
-import { CodeTag } from "@/components/badges";
+import { CodeTag, TONE_TEXT } from "@/components/badges";
+import { useConfirm } from "@/components/confirm";
 import { ModelDialog } from "@/components/models/model-dialog";
 import { PageBody, PageHeader } from "@/components/page-header";
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states";
@@ -33,9 +34,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { api, useDiscover, useModels } from "@/lib/api";
-import { ms, timeAgo } from "@/lib/format";
-import type { Model, ModelTestResult } from "@/lib/types";
+import { api, useDiscover, useModels, useRuns } from "@/lib/api";
+import { ms, points, scoreTone, timeAgo, tps } from "@/lib/format";
+import type { Model, ModelTestResult, Run } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 function ServerBadge({ model }: { model: Model }) {
   if (model.kind === "baseline") return <Badge variant="secondary">Offline baseline</Badge>;
@@ -117,9 +119,25 @@ function Detected({ models, onAdded }: { models: Model[]; onAdded: () => void })
   );
 }
 
-function ModelCard({ model, onEdit, onChange }: { model: Model; onEdit: () => void; onChange: () => void }) {
+interface ModelStats {
+  runs: number;
+  latest?: Run; // most recent completed run
+}
+
+function ModelCard({
+  model,
+  stats,
+  onEdit,
+  onChange,
+}: {
+  model: Model;
+  stats: ModelStats;
+  onEdit: () => void;
+  onChange: () => void;
+}) {
   const [testing, setTesting] = useState(false);
   const [result, setResult] = useState<ModelTestResult | null>(null);
+  const [ask, confirmDialog] = useConfirm();
 
   async function test() {
     setTesting(true);
@@ -136,7 +154,8 @@ function ModelCard({ model, onEdit, onChange }: { model: Model; onEdit: () => vo
   }
 
   async function remove() {
-    if (!confirm(`Delete ${model.name}? Its runs stay in the history.`)) return;
+    const ok = await ask({ title: `Delete ${model.name}?`, description: "Its runs stay in the history.", confirmLabel: "Delete", destructive: true });
+    if (!ok) return;
     try {
       await api.del(`/models/${model.id}`);
       toast.success("Model deleted");
@@ -148,6 +167,7 @@ function ModelCard({ model, onEdit, onChange }: { model: Model; onEdit: () => vo
 
   return (
     <Card className="gap-4">
+      {confirmDialog}
       <CardHeader>
         <div className="flex items-center gap-3">
           <div className="bg-muted flex size-9 shrink-0 items-center justify-center rounded-md border">
@@ -188,6 +208,25 @@ function ModelCard({ model, onEdit, onChange }: { model: Model; onEdit: () => vo
           {model.base_url && <CodeTag>{model.base_url}</CodeTag>}
         </div>
         {model.notes && <p className="text-muted-foreground line-clamp-2">{model.notes}</p>}
+        <div className="grid grid-cols-3 divide-x rounded-md border text-center">
+          {[
+            ["Runs", String(stats.runs)],
+            ["Last score", stats.latest ? points(stats.latest.summary.score) : "—"],
+            ["Speed", stats.latest ? tps(stats.latest.summary.perf.tokens_per_sec) : "—"],
+          ].map(([label, value], i) => (
+            <div key={label} className="px-2 py-2">
+              <div className="text-muted-foreground text-[11px]">{label}</div>
+              <div
+                className={cn(
+                  "tabular text-sm font-medium",
+                  i === 1 && stats.latest && TONE_TEXT[scoreTone(stats.latest.summary.score)],
+                )}
+              >
+                {i === 1 && stats.latest ? <Link href={`/runs/${stats.latest.id}`} className="hover:underline">{value}</Link> : value}
+              </div>
+            </div>
+          ))}
+        </div>
         {result && (
           <div className={result.ok ? "text-emerald-600 dark:text-emerald-400 text-xs" : "text-destructive text-xs"}>
             {result.ok ? `Replied "${(result.response ?? "").slice(0, 40)}" in ${ms(result.latency_ms)}` : result.error}
@@ -211,6 +250,11 @@ function ModelCard({ model, onEdit, onChange }: { model: Model; onEdit: () => vo
 
 export function ModelsView() {
   const { data: models, error, isLoading, mutate } = useModels();
+  const { data: runs } = useRuns();
+  const statsFor = (id: string): ModelStats => {
+    const mine = (runs ?? []).filter((r) => r.model_id === id);
+    return { runs: mine.length, latest: mine.find((r) => r.status === "completed") };
+  };
   const [editing, setEditing] = useState<Model | null>(null);
   const params = useSearchParams();
   const router = useRouter();
@@ -272,6 +316,7 @@ export function ModelsView() {
             {models.map((m) => (
               <ModelCard
                 key={m.id}
+                stats={statsFor(m.id)}
                 model={m}
                 onChange={() => mutate()}
                 onEdit={() => setEditing(m)}

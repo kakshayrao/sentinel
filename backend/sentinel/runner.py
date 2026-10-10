@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import asyncio
+import csv
+import io
+import math
 import statistics
 
 from . import db
@@ -49,6 +52,20 @@ def create_run(model: Model, config: RunConfig, name: str | None = None) -> tupl
     return run_id, work
 
 
+def finish(run_id: str, status: str, error: str | None = None) -> None:
+    """Final state: the summary is computed once and stored, so listings never recompute it."""
+    row = db.get_run_row(run_id)
+    config = RunConfig.model_validate_json(row["config"])
+    summary = summarize(row["total"], db.list_samples(run_id), config.suite_ids)
+    db.update_run(run_id, status=status, error=error, finished_at=db.now(), summary=summary.model_dump_json())
+
+
+async def warm_up(provider) -> None:
+    """One tiny request before measuring: fails fast if the server is down, and keeps
+    model load time (often many seconds on first use) out of the speed numbers."""
+    await provider.complete([{"role": "user", "content": "Reply with: ok"}], temperature=0.0, max_tokens=8)
+
+
 async def execute(run_id: str, model: Model, config: RunConfig, work: list) -> None:
     """Runs every planned item. Per-item failures are recorded, never fatal."""
     db.update_run(run_id, status="running", started_at=db.now())
@@ -57,7 +74,26 @@ async def execute(run_id: str, model: Model, config: RunConfig, work: list) -> N
         judge_model = db.get_model(config.judge_model_id) if config.judge_model_id else None
         judge = build_provider(judge_model) if judge_model else None
     except ProviderError as e:
-        db.update_run(run_id, status="failed", error=str(e), finished_at=db.now())
+        finish(run_id, "failed", str(e))
+        return
+    try:
+        await _execute(run_id, provider, judge, config, work)
+    finally:
+        await provider.aclose()
+        if judge:
+            await judge.aclose()
+
+
+async def _execute(run_id: str, provider, judge, config: RunConfig, work: list) -> None:
+    try:
+        await warm_up(provider)
+        if judge:
+            await warm_up(judge)
+    except asyncio.CancelledError:
+        finish(run_id, "cancelled")
+        raise
+    except ProviderError as e:
+        finish(run_id, "failed", str(e))
         return
 
     gate = asyncio.Semaphore(config.concurrency)
@@ -80,7 +116,10 @@ async def execute(run_id: str, model: Model, config: RunConfig, work: list) -> N
                     "tokens_estimated": int(completion.tokens_estimated),
                 }
                 result = await score(suite, item, completion.text, judge)
-                sample |= {"score": result.value, "passed": int(result.passed), "detail": result.detail}
+                detail = result.detail
+                if completion.truncated and not result.passed:
+                    detail += " · reply hit the max token limit"
+                sample |= {"score": result.value, "passed": int(result.passed), "detail": detail}
             except asyncio.CancelledError:
                 raise
             except Exception as e:  # network errors, server errors, judge failures
@@ -90,16 +129,16 @@ async def execute(run_id: str, model: Model, config: RunConfig, work: list) -> N
     try:
         await asyncio.gather(*(one(s, item) for s, item in work))
     except asyncio.CancelledError:
-        db.update_run(run_id, status="cancelled", finished_at=db.now())
+        finish(run_id, "cancelled")
         raise
     except Exception as e:  # a bug or storage failure: never leave the run stuck in "running"
-        db.update_run(run_id, status="failed", error=f"{type(e).__name__}: {e}"[:500], finished_at=db.now())
+        finish(run_id, "failed", f"{type(e).__name__}: {e}"[:500])
         return
-    samples = db.list_samples(run_id)
-    if samples and all(s["error"] for s in samples):
-        db.update_run(run_id, status="failed", error=samples[0]["error"], finished_at=db.now())
+    errors = [s["error"] for s in db.list_samples(run_id) if s["error"]]
+    if work and len(errors) == len(work):
+        finish(run_id, "failed", errors[0])
     else:
-        db.update_run(run_id, status="completed", finished_at=db.now())
+        finish(run_id, "completed")
 
 
 # ------------------------------------------------------------- summaries
@@ -111,11 +150,19 @@ def _percentile(values: list[float], q: float) -> float:
     return statistics.quantiles(values, n=100, method="inclusive")[round(q * 100) - 1]
 
 
+def _margin(values: list[float]) -> float:
+    """Half-width of the 95% confidence interval of the mean (normal approximation)."""
+    if len(values) < 2:
+        return 0.0
+    return 1.96 * statistics.stdev(values) / math.sqrt(len(values))
+
+
 def summarize(total: int, samples: list[dict], suite_ids: list[str]) -> RunSummary:
     by_suite: list[SuiteScore] = []
     for suite_id in suite_ids:
         rows = [s for s in samples if s["suite_id"] == suite_id]
         scored = [s for s in rows if s["error"] is None and s["score"] is not None]
+        values = [s["score"] for s in scored]
         suite = get_suite(suite_id)
         by_suite.append(SuiteScore(
             suite_id=suite_id,
@@ -124,7 +171,8 @@ def summarize(total: int, samples: list[dict], suite_ids: list[str]) -> RunSumma
             scorer=suite.scorer if suite else "exact",
             n=len(scored),
             errors=sum(1 for s in rows if s["error"]),
-            score=statistics.fmean(s["score"] for s in scored) if scored else 0.0,
+            score=statistics.fmean(values) if values else 0.0,
+            margin=_margin(values),
             passed=sum(1 for s in scored if s["passed"]),
         ))
     ok = [s for s in samples if s["error"] is None and s["latency_ms"] is not None]
@@ -143,19 +191,40 @@ def summarize(total: int, samples: list[dict], suite_ids: list[str]) -> RunSumma
         tokens_estimated=any(s["tokens_estimated"] for s in ok),
     )
     scored_suites = [s for s in by_suite if s.n]
+    k = len(scored_suites)
     return RunSummary(
         total=total,
         completed=len(samples),
         errors=sum(1 for s in samples if s["error"]),
         score=statistics.fmean(s.score for s in scored_suites) if scored_suites else 0.0,
+        # Margin of a mean of independent suite means: sqrt(sum(m_i^2)) / k
+        margin=math.sqrt(sum(s.margin**2 for s in scored_suites)) / k if k else 0.0,
         by_suite=by_suite,
         perf=perf,
     )
 
 
+FINAL = ("completed", "failed", "cancelled")
+
+
+def load_runs(rows: list[dict], models: dict[str, Model]) -> list[Run]:
+    """Finished runs use their stored summary; only active (or older, unsummarized) runs
+    read their samples. Older finished runs get their summary stored on first read."""
+    pending = [r["id"] for r in rows if not r.get("summary")]
+    samples = db.samples_by_run(pending)
+    runs = []
+    for row in rows:
+        run = to_run(row, samples.get(row["id"], []), models)
+        if not row.get("summary") and row["status"] in FINAL:
+            db.update_run(row["id"], summary=run.summary.model_dump_json())
+        runs.append(run)
+    return runs
+
+
 def to_run(row: dict, samples: list[dict], models: dict[str, Model]) -> Run:
     config = RunConfig.model_validate_json(row["config"])
     model = models.get(row["model_id"])
+    stored = row.get("summary") if row["status"] in FINAL else None
     return Run(
         id=row["id"],
         name=row["name"],
@@ -167,7 +236,7 @@ def to_run(row: dict, samples: list[dict], models: dict[str, Model]) -> Run:
         started_at=row["started_at"],
         finished_at=row["finished_at"],
         error=row["error"],
-        summary=summarize(row["total"], samples, config.suite_ids),
+        summary=RunSummary.model_validate_json(stored) if stored else summarize(row["total"], samples, config.suite_ids),
     )
 
 
@@ -189,12 +258,14 @@ def report_markdown(run: RunDetail) -> str:
         "",
         f"- Model: **{run.model_name}**",
         f"- Status: {run.status}",
-        f"- Overall score: **{run.summary.score * 100:.1f}%** ({run.summary.completed}/{run.summary.total} items, {run.summary.errors} errors)",
+        f"- Overall score: **{run.summary.score * 100:.1f}%** ± {run.summary.margin * 100:.1f} "
+        f"({run.summary.completed}/{run.summary.total} items, {run.summary.errors} errors)",
         f"- Temperature: {run.config.temperature}, seed {run.config.seed}",
         "",
-        "| Benchmark | Scorer | Items | Score | Passed |",
-        "|---|---|---:|---:|---:|",
-        *[f"| {s.name} | {s.scorer} | {s.n} | {s.score * 100:.1f}% | {s.passed} |" for s in run.summary.by_suite],
+        "| Benchmark | Scorer | Items | Score | 95% CI | Passed |",
+        "|---|---|---:|---:|---:|---:|",
+        *[f"| {s.name} | {s.scorer} | {s.n} | {s.score * 100:.1f}% | ± {s.margin * 100:.1f} | {s.passed} |"
+          for s in run.summary.by_suite],
         "",
         "## Performance",
         "",
@@ -204,3 +275,16 @@ def report_markdown(run: RunDetail) -> str:
         "",
     ]
     return "\n".join(lines)
+
+
+CSV_COLUMNS = ["suite_id", "item_id", "passed", "score", "detail", "latency_ms", "ttft_ms",
+               "output_tokens", "error", "target", "response", "prompt"]
+
+
+def samples_csv(run: RunDetail) -> str:
+    out = io.StringIO()
+    writer = csv.writer(out)
+    writer.writerow(CSV_COLUMNS)
+    for s in run.samples:
+        writer.writerow([getattr(s, c) for c in CSV_COLUMNS])
+    return out.getvalue()
