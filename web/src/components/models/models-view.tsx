@@ -48,7 +48,9 @@ function ServerBadge({ model }: { model: Model }) {
 
 function Detected({ models, onAdded }: { models: Model[]; onAdded: () => void }) {
   const { data: servers, isLoading, isValidating, mutate } = useDiscover();
-  const registered = new Set(models.map((m) => `${m.base_url}|${m.model}`));
+  // "name" and "name:latest" are the same Ollama model
+  const key = (url: string | null, id: string | null) => `${url}|${(id ?? "").replace(/:latest$/, "")}`;
+  const registered = new Set(models.map((m) => key(m.base_url, m.model)));
 
   async function add(server: string, base_url: string, model: string) {
     try {
@@ -93,7 +95,7 @@ function Detected({ models, onAdded }: { models: Model[]; onAdded: () => void })
                 ) : (
                   <div className="flex flex-wrap gap-2">
                     {s.models.map((m) => {
-                      const added = registered.has(`${s.base_url}|${m}`);
+                      const added = registered.has(key(s.base_url, m));
                       return (
                         <Button
                           key={m}
