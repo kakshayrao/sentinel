@@ -1,0 +1,108 @@
+{
+ "id": "structured-extraction",
+ "name": "Structured extraction",
+ "category": "structured",
+ "scorer": "json",
+ "description": "10 texts where the model returns the requested fields as a JSON object, scored per field.",
+ "prompt_template": "Extract the requested fields from the text. Reply with only a JSON object using exactly the field names given.\n\n{input}",
+ "max_tokens": 256,
+ "items": [
+  {
+   "id": "ex-01",
+   "input": "Fields: name (string), age (number), city (string)\nText: Meera Iyer, 29, moved to Pune last year to join a design studio.",
+   "target": {
+    "name": "Meera Iyer",
+    "age": 29,
+    "city": "Pune"
+   }
+  },
+  {
+   "id": "ex-02",
+   "input": "Fields: product (string), price (number), currency (string)\nText: The new SoundMax headphones are now available for 2,499 INR on our website.",
+   "target": {
+    "product": "SoundMax headphones",
+    "price": 2499,
+    "currency": "INR"
+   }
+  },
+  {
+   "id": "ex-03",
+   "input": "Fields: date (YYYY-MM-DD), team_home (string), team_away (string), score_home (number), score_away (number)\nText: On 14 March 2025, Chennai Kings beat Delhi Riders 3-1 at home.",
+   "target": {
+    "date": "2025-03-14",
+    "team_home": "Chennai Kings",
+    "team_away": "Delhi Riders",
+    "score_home": 3,
+    "score_away": 1
+   }
+  },
+  {
+   "id": "ex-04",
+   "input": "Fields: title (string), author (string), year (number)\nText: \"The Silent River\" was written by Arjun Mehta and published in 2019.",
+   "target": {
+    "title": "The Silent River",
+    "author": "Arjun Mehta",
+    "year": 2019
+   }
+  },
+  {
+   "id": "ex-05",
+   "input": "Fields: email (string), phone (string), company (string)\nText: Contact our sales lead at sales@brightlabs.io or call +1-415-555-0199. Bright Labs replies within a day.",
+   "target": {
+    "email": "sales@brightlabs.io",
+    "phone": "+1-415-555-0199",
+    "company": "Bright Labs"
+   }
+  },
+  {
+   "id": "ex-06",
+   "input": "Fields: flight (string), origin (string), destination (string), gate (string)\nText: Flight AI 202 from Hyderabad to Singapore will now board at gate 14B.",
+   "target": {
+    "flight": "AI 202",
+    "origin": "Hyderabad",
+    "destination": "Singapore",
+    "gate": "14B"
+   }
+  },
+  {
+   "id": "ex-07",
+   "input": "Fields: ingredients (list of strings), servings (number)\nText: This pancake recipe serves 4 and needs flour, milk, eggs and sugar.",
+   "target": {
+    "ingredients": [
+     "flour",
+     "milk",
+     "eggs",
+     "sugar"
+    ],
+    "servings": 4
+   }
+  },
+  {
+   "id": "ex-08",
+   "input": "Fields: company (string), amount (number, in millions of dollars), round (string)\nText: Startup NovaGrid raised $45 million in a Series B round led by Horizon Ventures.",
+   "target": {
+    "company": "NovaGrid",
+    "amount": 45,
+    "round": "Series B"
+   }
+  },
+  {
+   "id": "ex-09",
+   "input": "Fields: temperature_c (number), condition (string), city (string)\nText: Expect sunny skies in Jaipur today with a high of 38 degrees Celsius.",
+   "target": {
+    "temperature_c": 38,
+    "condition": "sunny",
+    "city": "Jaipur"
+   }
+  },
+  {
+   "id": "ex-10",
+   "input": "Fields: order_id (string), items (number), status (string)\nText: Your order #A7781 with 3 items has been shipped and will arrive Thursday.",
+   "target": {
+    "order_id": "A7781",
+    "items": 3,
+    "status": "shipped"
+   }
+  }
+ ]
+}

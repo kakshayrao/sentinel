@@ -1,0 +1,96 @@
+{
+ "id": "reading-comprehension",
+ "name": "Reading comprehension",
+ "category": "reading",
+ "scorer": "f1",
+ "description": "10 short passages with questions answered from the text, scored by token F1 as in SQuAD.",
+ "prompt_template": "Read the passage and answer the question with a short phrase taken from the passage.\n\nPassage:\n{context}\n\nQuestion: {input}\nAnswer:",
+ "max_tokens": 128,
+ "items": [
+  {
+   "id": "rc-01",
+   "input": "Since what year have mass bleaching events occurred?",
+   "context": "The Great Barrier Reef, off the coast of Queensland, Australia, is the world's largest coral reef system. It is made up of nearly 3,000 individual reefs and 900 islands and stretches for over 2,300 kilometres. The reef is home to thousands of species, but rising sea temperatures have caused several mass bleaching events since 1998.",
+   "target": [
+    "1998"
+   ]
+  },
+  {
+   "id": "rc-02",
+   "input": "Which two elements did the Curies discover?",
+   "context": "Marie Curie was born in Warsaw in 1867. She moved to Paris to study physics and mathematics at the Sorbonne. Together with her husband Pierre, she discovered the elements polonium and radium. She was the first person to win Nobel Prizes in two different sciences: physics in 1903 and chemistry in 1911.",
+   "target": [
+    "polonium and radium",
+    "radium and polonium"
+   ]
+  },
+  {
+   "id": "rc-03",
+   "input": "Where does Python's name come from?",
+   "context": "The Python programming language was created by Guido van Rossum and first released in 1991. Its design philosophy emphasizes code readability, notably through significant indentation. The name comes not from the snake but from the British comedy group Monty Python.",
+   "target": [
+    "the British comedy group Monty Python",
+    "Monty Python"
+   ]
+  },
+  {
+   "id": "rc-04",
+   "input": "What does the duration of the waggle run indicate?",
+   "context": "Honeybees communicate the location of food through the waggle dance. The angle of the dance relative to vertical shows the direction of the food relative to the sun, and the duration of the waggle run indicates how far away the food is.",
+   "target": [
+    "how far away the food is",
+    "the distance to the food"
+   ]
+  },
+  {
+   "id": "rc-05",
+   "input": "What was the name of the Chandrayaan-3 rover?",
+   "context": "Chandrayaan-3 was an Indian lunar mission launched by ISRO in July 2023. Its lander, Vikram, touched down near the Moon's south pole on 23 August 2023, making India the first country to land near that region. The rover Pragyan then explored the surface for about two weeks.",
+   "target": [
+    "Pragyan"
+   ]
+  },
+  {
+   "id": "rc-06",
+   "input": "Why does the left ventricle have the thickest wall?",
+   "context": "The human heart has four chambers: two atria on top and two ventricles below. The right side pumps blood to the lungs to pick up oxygen, while the left side pumps oxygen-rich blood to the rest of the body. The left ventricle has the thickest wall because it pumps blood the farthest.",
+   "target": [
+    "because it pumps blood the farthest",
+    "it pumps blood the farthest"
+   ]
+  },
+  {
+   "id": "rc-07",
+   "input": "What was the name of the mould Fleming noticed?",
+   "context": "In 1928, Alexander Fleming noticed that a mould called Penicillium had killed the bacteria in one of his culture plates. This observation led to penicillin, the first widely used antibiotic, although it was not mass-produced until the 1940s.",
+   "target": [
+    "Penicillium"
+   ]
+  },
+  {
+   "id": "rc-08",
+   "input": "Which religion is mentioned as spreading along the Silk Road?",
+   "context": "The Silk Road was a network of trade routes connecting China with the Mediterranean world. Besides silk, merchants traded spices, paper and precious metals. The routes also spread ideas, religions such as Buddhism, and technologies like papermaking.",
+   "target": [
+    "Buddhism"
+   ]
+  },
+  {
+   "id": "rc-09",
+   "input": "What device converts direct current into alternating current?",
+   "context": "Solar panels convert sunlight into electricity using photovoltaic cells, usually made of silicon. When light hits a cell, it knocks electrons loose, creating a flow of electric current. An inverter then converts this direct current into alternating current for household use.",
+   "target": [
+    "an inverter",
+    "inverter"
+   ]
+  },
+  {
+   "id": "rc-10",
+   "input": "Where does the monsoon usually reach India first?",
+   "context": "The monsoon usually reaches India through Kerala in early June and covers the whole country by mid-July. It brings about 75 percent of India's annual rainfall, which is vital for crops such as rice and for refilling reservoirs.",
+   "target": [
+    "Kerala"
+   ]
+  }
+ ]
+}

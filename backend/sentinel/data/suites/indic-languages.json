@@ -1,0 +1,179 @@
+{
+ "id": "indic-languages",
+ "name": "Hindi & Telugu",
+ "category": "multilingual",
+ "scorer": "choice",
+ "description": "12 multiple-choice questions written in Hindi and Telugu to check Indian-language understanding.",
+ "prompt_template": "Question: {input}\n\n{choices}\n\nRespond with only the letter of the correct answer.",
+ "max_tokens": 256,
+ "items": [
+  {
+   "id": "in-01",
+   "input": "भारत की राजधानी क्या है?",
+   "choices": [
+    "मुंबई",
+    "चेन्नई",
+    "कोलकाता",
+    "नई दिल्ली"
+   ],
+   "target": "D",
+   "meta": {
+    "language": "hi"
+   }
+  },
+  {
+   "id": "in-02",
+   "input": "एक सप्ताह में कितने दिन होते हैं?",
+   "choices": [
+    "छह",
+    "सात",
+    "पाँच",
+    "आठ"
+   ],
+   "target": "B",
+   "meta": {
+    "language": "hi"
+   }
+  },
+  {
+   "id": "in-03",
+   "input": "सूर्य किस दिशा में उगता है?",
+   "choices": [
+    "पश्चिम",
+    "दक्षिण",
+    "पूर्व",
+    "उत्तर"
+   ],
+   "target": "C",
+   "meta": {
+    "language": "hi"
+   }
+  },
+  {
+   "id": "in-04",
+   "input": "12 और 8 का योग क्या है?",
+   "choices": [
+    "18",
+    "24",
+    "22",
+    "20"
+   ],
+   "target": "D",
+   "meta": {
+    "language": "hi"
+   }
+  },
+  {
+   "id": "in-05",
+   "input": "\"पानी\" का अंग्रेज़ी में क्या अर्थ है?",
+   "choices": [
+    "Water",
+    "Fire",
+    "Air",
+    "Earth"
+   ],
+   "target": "A",
+   "meta": {
+    "language": "hi"
+   }
+  },
+  {
+   "id": "in-06",
+   "input": "ताजमहल किस शहर में स्थित है?",
+   "choices": [
+    "जयपुर",
+    "लखनऊ",
+    "दिल्ली",
+    "आगरा"
+   ],
+   "target": "D",
+   "meta": {
+    "language": "hi"
+   }
+  },
+  {
+   "id": "in-07",
+   "input": "తెలంగాణ రాజధాని ఏది?",
+   "choices": [
+    "విజయవాడ",
+    "హైదరాబాద్",
+    "వరంగల్",
+    "విశాఖపట్నం"
+   ],
+   "target": "B",
+   "meta": {
+    "language": "te"
+   }
+  },
+  {
+   "id": "in-08",
+   "input": "ఒక సంవత్సరంలో ఎన్ని నెలలు ఉంటాయి?",
+   "choices": [
+    "పన్నెండు",
+    "పదమూడు",
+    "పదకొండు",
+    "పది"
+   ],
+   "target": "A",
+   "meta": {
+    "language": "te"
+   }
+  },
+  {
+   "id": "in-09",
+   "input": "సూర్యుడు ఏ దిక్కున ఉదయిస్తాడు?",
+   "choices": [
+    "పడమర",
+    "తూర్పు",
+    "దక్షిణం",
+    "ఉత్తరం"
+   ],
+   "target": "B",
+   "meta": {
+    "language": "te"
+   }
+  },
+  {
+   "id": "in-10",
+   "input": "15 మరియు 10 ల మొత్తం ఎంత?",
+   "choices": [
+    "30",
+    "20",
+    "25",
+    "35"
+   ],
+   "target": "C",
+   "meta": {
+    "language": "te"
+   }
+  },
+  {
+   "id": "in-11",
+   "input": "\"పుస్తకం\" అంటే ఆంగ్లంలో అర్థం ఏమిటి?",
+   "choices": [
+    "Book",
+    "Pen",
+    "Table",
+    "Chair"
+   ],
+   "target": "A",
+   "meta": {
+    "language": "te"
+   }
+  },
+  {
+   "id": "in-12",
+   "input": "భారతదేశ జాతీయ పక్షి ఏది?",
+   "choices": [
+    "పావురం",
+    "కాకి",
+    "నెమలి",
+    "చిలుక"
+   ],
+   "target": "C",
+   "meta": {
+    "language": "te"
+   }
+  }
+ ]
+}

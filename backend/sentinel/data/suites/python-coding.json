@@ -1,0 +1,119 @@
+{
+ "id": "python-coding",
+ "name": "Python coding",
+ "category": "coding",
+ "scorer": "code",
+ "description": "12 function-writing tasks in the style of HumanEval, graded by running unit tests (pass@1).",
+ "prompt_template": "Complete the following Python function. Return the complete function in a single ```python code block.\n\n```python\n{input}\n```",
+ "max_tokens": 1024,
+ "items": [
+  {
+   "id": "py-01",
+   "input": "def is_palindrome(s: str) -> bool:\n    \"\"\"Return True if s reads the same forwards and backwards, ignoring case and\n    any character that is not a letter or digit.\n    >>> is_palindrome(\"A man, a plan, a canal: Panama\")\n    True\n    >>> is_palindrome(\"hello\")\n    False\n    \"\"\"\n",
+   "tests": "def check(candidate):\n    assert candidate(\"A man, a plan, a canal: Panama\") is True\n    assert candidate(\"hello\") is False\n    assert candidate(\"\") is True\n    assert candidate(\"No 'x' in Nixon\") is True\n    assert candidate(\"12321\") is True\n    assert candidate(\"123ab\") is False\n",
+   "entry_point": "is_palindrome",
+   "meta": {
+    "reference_solution": "def is_palindrome(s: str) -> bool:\n    \"\"\"Return True if s reads the same forwards and backwards, ignoring case and\n    any character that is not a letter or digit.\n    >>> is_palindrome(\"A man, a plan, a canal: Panama\")\n    True\n    >>> is_palindrome(\"hello\")\n    False\n    \"\"\"\n    cleaned = [c.lower() for c in s if c.isalnum()]\n    return cleaned == cleaned[::-1]\n"
+   }
+  },
+  {
+   "id": "py-02",
+   "input": "def fizzbuzz(n: int) -> list:\n    \"\"\"Return a list of strings for the numbers 1..n: \"Fizz\" for multiples of 3,\n    \"Buzz\" for multiples of 5, \"FizzBuzz\" for multiples of both, otherwise the number.\n    >>> fizzbuzz(5)\n    ['1', '2', 'Fizz', '4', 'Buzz']\n    \"\"\"\n",
+   "tests": "def check(candidate):\n    assert candidate(5) == ['1', '2', 'Fizz', '4', 'Buzz']\n    assert candidate(15)[-1] == 'FizzBuzz'\n    assert candidate(0) == []\n    assert len(candidate(100)) == 100\n    assert candidate(30)[29] == 'FizzBuzz' and candidate(30)[9] == 'Buzz'\n",
+   "entry_point": "fizzbuzz",
+   "meta": {
+    "reference_solution": "def fizzbuzz(n: int) -> list:\n    \"\"\"Return a list of strings for the numbers 1..n: \"Fizz\" for multiples of 3,\n    \"Buzz\" for multiples of 5, \"FizzBuzz\" for multiples of both, otherwise the number.\n    >>> fizzbuzz(5)\n    ['1', '2', 'Fizz', '4', 'Buzz']\n    \"\"\"\n    out = []\n    for i in range(1, n + 1):\n        out.append(\"FizzBuzz\" if i % 15 == 0 else \"Fizz\" if i % 3 == 0 else \"Buzz\" if i % 5 == 0 else str(i))\n    return out\n"
+   }
+  },
+  {
+   "id": "py-03",
+   "input": "def two_sum(nums: list, target: int) -> list:\n    \"\"\"Return the indices [i, j] (i < j) of the two numbers in nums that add up to\n    target. Exactly one solution exists.\n    >>> two_sum([2, 7, 11, 15], 9)\n    [0, 1]\n    \"\"\"\n",
+   "tests": "def check(candidate):\n    assert candidate([2, 7, 11, 15], 9) == [0, 1]\n    assert candidate([3, 2, 4], 6) == [1, 2]\n    assert candidate([3, 3], 6) == [0, 1]\n    assert candidate([-1, -2, -3, -4, -5], -8) == [2, 4]\n",
+   "entry_point": "two_sum",
+   "meta": {
+    "reference_solution": "def two_sum(nums: list, target: int) -> list:\n    \"\"\"Return the indices [i, j] (i < j) of the two numbers in nums that add up to\n    target. Exactly one solution exists.\n    >>> two_sum([2, 7, 11, 15], 9)\n    [0, 1]\n    \"\"\"\n    seen = {}\n    for j, x in enumerate(nums):\n        if target - x in seen:\n            return [seen[target - x], j]\n        seen[x] = j\n    return []\n"
+   }
+  },
+  {
+   "id": "py-04",
+   "input": "def flatten(nested: list) -> list:\n    \"\"\"Flatten an arbitrarily nested list of lists into a flat list, keeping order.\n    >>> flatten([1, [2, [3, 4]], 5])\n    [1, 2, 3, 4, 5]\n    \"\"\"\n",
+   "tests": "def check(candidate):\n    assert candidate([1, [2, [3, 4]], 5]) == [1, 2, 3, 4, 5]\n    assert candidate([]) == []\n    assert candidate([[[]]]) == []\n    assert candidate([[1], [2, [3, [4, [5]]]]]) == [1, 2, 3, 4, 5]\n    assert candidate(['a', ['b']]) == ['a', 'b']\n",
+   "entry_point": "flatten",
+   "meta": {
+    "reference_solution": "def flatten(nested: list) -> list:\n    \"\"\"Flatten an arbitrarily nested list of lists into a flat list, keeping order.\n    >>> flatten([1, [2, [3, 4]], 5])\n    [1, 2, 3, 4, 5]\n    \"\"\"\n    out = []\n    for x in nested:\n        if isinstance(x, list):\n            out.extend(flatten(x))\n        else:\n            out.append(x)\n    return out\n"
+   }
+  },
+  {
+   "id": "py-05",
+   "input": "def word_frequencies(text: str) -> dict:\n    \"\"\"Count how often each word appears. Words are compared in lowercase and\n    surrounding punctuation is ignored.\n    >>> word_frequencies(\"The cat and the hat.\")\n    {'the': 2, 'cat': 1, 'and': 1, 'hat': 1}\n    \"\"\"\n",
+   "tests": "def check(candidate):\n    assert candidate(\"The cat and the hat.\") == {'the': 2, 'cat': 1, 'and': 1, 'hat': 1}\n    assert candidate(\"\") == {}\n    assert candidate(\"Hi! hi? HI.\") == {'hi': 3}\n    assert candidate(\"one, two; two: three three three\") == {'one': 1, 'two': 2, 'three': 3}\n",
+   "entry_point": "word_frequencies",
+   "meta": {
+    "reference_solution": "def word_frequencies(text: str) -> dict:\n    \"\"\"Count how often each word appears. Words are compared in lowercase and\n    surrounding punctuation is ignored.\n    >>> word_frequencies(\"The cat and the hat.\")\n    {'the': 2, 'cat': 1, 'and': 1, 'hat': 1}\n    \"\"\"\n    import string\n    counts = {}\n    for raw in text.split():\n        w = raw.strip(string.punctuation).lower()\n        if w:\n            counts[w] = counts.get(w, 0) + 1\n    return counts\n"
+   }
+  },
+  {
+   "id": "py-06",
+   "input": "def is_valid_brackets(s: str) -> bool:\n    \"\"\"Return True if every bracket in s ((), [], {}) is closed in the correct order.\n    Other characters are ignored.\n    >>> is_valid_brackets(\"{[()]}\")\n    True\n    >>> is_valid_brackets(\"(]\")\n    False\n    \"\"\"\n",
+   "tests": "def check(candidate):\n    assert candidate(\"{[()]}\") is True\n    assert candidate(\"(]\") is False\n    assert candidate(\"\") is True\n    assert candidate(\"((\") is False\n    assert candidate(\"a(b)c[d]{e}\") is True\n    assert candidate(\"([)]\") is False\n    assert candidate(\"}\") is False\n",
+   "entry_point": "is_valid_brackets",
+   "meta": {
+    "reference_solution": "def is_valid_brackets(s: str) -> bool:\n    \"\"\"Return True if every bracket in s ((), [], {}) is closed in the correct order.\n    Other characters are ignored.\n    >>> is_valid_brackets(\"{[()]}\")\n    True\n    >>> is_valid_brackets(\"(]\")\n    False\n    \"\"\"\n    pairs = {')': '(', ']': '[', '}': '{'}\n    stack = []\n    for c in s:\n        if c in '([{':\n            stack.append(c)\n        elif c in pairs:\n            if not stack or stack.pop() != pairs[c]:\n                return False\n    return not stack\n"
+   }
+  },
+  {
+   "id": "py-07",
+   "input": "def merge_intervals(intervals: list) -> list:\n    \"\"\"Merge overlapping [start, end] intervals and return them sorted by start.\n    Intervals that touch (end == next start) are merged.\n    >>> merge_intervals([[1, 3], [2, 6], [8, 10]])\n    [[1, 6], [8, 10]]\n    \"\"\"\n",
+   "tests": "def check(candidate):\n    assert candidate([[1, 3], [2, 6], [8, 10]]) == [[1, 6], [8, 10]]\n    assert candidate([[1, 4], [4, 5]]) == [[1, 5]]\n    assert candidate([]) == []\n    assert candidate([[5, 7], [1, 2]]) == [[1, 2], [5, 7]]\n    assert candidate([[1, 10], [2, 3], [4, 5]]) == [[1, 10]]\n",
+   "entry_point": "merge_intervals",
+   "meta": {
+    "reference_solution": "def merge_intervals(intervals: list) -> list:\n    \"\"\"Merge overlapping [start, end] intervals and return them sorted by start.\n    Intervals that touch (end == next start) are merged.\n    >>> merge_intervals([[1, 3], [2, 6], [8, 10]])\n    [[1, 6], [8, 10]]\n    \"\"\"\n    out = []\n    for start, end in sorted(intervals):\n        if out and start <= out[-1][1]:\n            out[-1][1] = max(out[-1][1], end)\n        else:\n            out.append([start, end])\n    return out\n"
+   }
+  },
+  {
+   "id": "py-08",
+   "input": "def roman_to_int(s: str) -> int:\n    \"\"\"Convert a Roman numeral (I, V, X, L, C, D, M) to an integer.\n    >>> roman_to_int(\"MCMXCIV\")\n    1994\n    \"\"\"\n",
+   "tests": "def check(candidate):\n    assert candidate(\"III\") == 3\n    assert candidate(\"IV\") == 4\n    assert candidate(\"IX\") == 9\n    assert candidate(\"LVIII\") == 58\n    assert candidate(\"MCMXCIV\") == 1994\n    assert candidate(\"MMXXVI\") == 2026\n",
+   "entry_point": "roman_to_int",
+   "meta": {
+    "reference_solution": "def roman_to_int(s: str) -> int:\n    \"\"\"Convert a Roman numeral (I, V, X, L, C, D, M) to an integer.\n    >>> roman_to_int(\"MCMXCIV\")\n    1994\n    \"\"\"\n    values = {'I': 1, 'V': 5, 'X': 10, 'L': 50, 'C': 100, 'D': 500, 'M': 1000}\n    total = 0\n    for i, c in enumerate(s):\n        v = values[c]\n        if i + 1 < len(s) and values[s[i + 1]] > v:\n            total -= v\n        else:\n            total += v\n    return total\n"
+   }
+  },
+  {
+   "id": "py-09",
+   "input": "def chunk(items: list, size: int) -> list:\n    \"\"\"Split items into consecutive lists of length size; the last one may be shorter.\n    >>> chunk([1, 2, 3, 4, 5], 2)\n    [[1, 2], [3, 4], [5]]\n    \"\"\"\n",
+   "tests": "def check(candidate):\n    assert candidate([1, 2, 3, 4, 5], 2) == [[1, 2], [3, 4], [5]]\n    assert candidate([], 3) == []\n    assert candidate([1, 2, 3], 3) == [[1, 2, 3]]\n    assert candidate([1, 2, 3], 5) == [[1, 2, 3]]\n",
+   "entry_point": "chunk",
+   "meta": {
+    "reference_solution": "def chunk(items: list, size: int) -> list:\n    \"\"\"Split items into consecutive lists of length size; the last one may be shorter.\n    >>> chunk([1, 2, 3, 4, 5], 2)\n    [[1, 2], [3, 4], [5]]\n    \"\"\"\n    return [items[i:i + size] for i in range(0, len(items), size)]\n"
+   }
+  },
+  {
+   "id": "py-10",
+   "input": "def second_largest(nums: list):\n    \"\"\"Return the second largest distinct value in nums, or None if there isn't one.\n    >>> second_largest([4, 1, 7, 7, 3])\n    4\n    \"\"\"\n",
+   "tests": "def check(candidate):\n    assert candidate([4, 1, 7, 7, 3]) == 4\n    assert candidate([5, 5, 5]) is None\n    assert candidate([]) is None\n    assert candidate([-2, -8, -1]) == -2\n    assert candidate([1, 2]) == 1\n",
+   "entry_point": "second_largest",
+   "meta": {
+    "reference_solution": "def second_largest(nums: list):\n    \"\"\"Return the second largest distinct value in nums, or None if there isn't one.\n    >>> second_largest([4, 1, 7, 7, 3])\n    4\n    \"\"\"\n    distinct = sorted(set(nums), reverse=True)\n    return distinct[1] if len(distinct) > 1 else None\n"
+   }
+  },
+  {
+   "id": "py-11",
+   "input": "def rotate_matrix(matrix: list) -> list:\n    \"\"\"Return a new square matrix rotated 90 degrees clockwise.\n    >>> rotate_matrix([[1, 2], [3, 4]])\n    [[3, 1], [4, 2]]\n    \"\"\"\n",
+   "tests": "def check(candidate):\n    assert candidate([[1, 2], [3, 4]]) == [[3, 1], [4, 2]]\n    assert candidate([[1]]) == [[1]]\n    assert candidate([[1, 2, 3], [4, 5, 6], [7, 8, 9]]) == [[7, 4, 1], [8, 5, 2], [9, 6, 3]]\n    m = [[1, 2], [3, 4]]\n    candidate(m)\n    assert m == [[1, 2], [3, 4]], \"input must not be modified\"\n",
+   "entry_point": "rotate_matrix",
+   "meta": {
+    "reference_solution": "def rotate_matrix(matrix: list) -> list:\n    \"\"\"Return a new square matrix rotated 90 degrees clockwise.\n    >>> rotate_matrix([[1, 2], [3, 4]])\n    [[3, 1], [4, 2]]\n    \"\"\"\n    return [list(row) for row in zip(*matrix[::-1])]\n"
+   }
+  },
+  {
+   "id": "py-12",
+   "input": "def compress(s: str) -> str:\n    \"\"\"Run-length encode s: each run of a character becomes the character followed by\n    the run length.\n    >>> compress(\"aaabcc\")\n    'a3b1c2'\n    \"\"\"\n",
+   "tests": "def check(candidate):\n    assert candidate(\"aaabcc\") == \"a3b1c2\"\n    assert candidate(\"\") == \"\"\n    assert candidate(\"a\") == \"a1\"\n    assert candidate(\"aabbaa\") == \"a2b2a2\"\n    assert candidate(\"zzzzzzzzzzzz\") == \"z12\"\n",
+   "entry_point": "compress",
+   "meta": {
+    "reference_solution": "def compress(s: str) -> str:\n    \"\"\"Run-length encode s: each run of a character becomes the character followed by\n    the run length.\n    >>> compress(\"aaabcc\")\n    'a3b1c2'\n    \"\"\"\n    out = []\n    i = 0\n    while i < len(s):\n        j = i\n        while j < len(s) and s[j] == s[i]:\n            j += 1\n        out.append(f\"{s[i]}{j - i}\")\n        i = j\n    return \"\".join(out)\n"
+   }
+  }
+ ]
+}

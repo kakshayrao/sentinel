@@ -1,0 +1,341 @@
+{
+ "id": "general-knowledge",
+ "name": "General knowledge",
+ "category": "knowledge",
+ "scorer": "choice",
+ "description": "30 multiple-choice questions across science, history, geography, maths and computing.",
+ "prompt_template": "Question: {input}\n\n{choices}\n\nRespond with only the letter of the correct answer.",
+ "max_tokens": 256,
+ "items": [
+  {
+   "id": "gk-01",
+   "input": "What is the chemical symbol for gold?",
+   "choices": [
+    "Ag",
+    "Go",
+    "Au",
+    "Gd"
+   ],
+   "target": "C"
+  },
+  {
+   "id": "gk-02",
+   "input": "Which planet is known as the Red Planet?",
+   "choices": [
+    "Jupiter",
+    "Mercury",
+    "Mars",
+    "Venus"
+   ],
+   "target": "C"
+  },
+  {
+   "id": "gk-03",
+   "input": "Which part of the cell produces most of its energy (ATP)?",
+   "choices": [
+    "Mitochondrion",
+    "Ribosome",
+    "Nucleus",
+    "Golgi apparatus"
+   ],
+   "target": "A"
+  },
+  {
+   "id": "gk-04",
+   "input": "Who wrote the novel \"Pride and Prejudice\"?",
+   "choices": [
+    "George Eliot",
+    "Jane Austen",
+    "Mary Shelley",
+    "Charlotte Brontë"
+   ],
+   "target": "B"
+  },
+  {
+   "id": "gk-05",
+   "input": "What is the largest ocean on Earth?",
+   "choices": [
+    "Pacific Ocean",
+    "Atlantic Ocean",
+    "Indian Ocean",
+    "Arctic Ocean"
+   ],
+   "target": "A"
+  },
+  {
+   "id": "gk-06",
+   "input": "In computing, what does \"CPU\" stand for?",
+   "choices": [
+    "Computer Personal Unit",
+    "Central Processing Unit",
+    "Central Program Utility",
+    "Core Processing Unit"
+   ],
+   "target": "B"
+  },
+  {
+   "id": "gk-07",
+   "input": "What is the time complexity of binary search on a sorted array of n elements?",
+   "choices": [
+    "O(log n)",
+    "O(1)",
+    "O(n log n)",
+    "O(n)"
+   ],
+   "target": "A"
+  },
+  {
+   "id": "gk-08",
+   "input": "Which gas do plants mainly absorb from the air for photosynthesis?",
+   "choices": [
+    "Carbon dioxide",
+    "Hydrogen",
+    "Nitrogen",
+    "Oxygen"
+   ],
+   "target": "A"
+  },
+  {
+   "id": "gk-09",
+   "input": "What is the square root of 144?",
+   "choices": [
+    "16",
+    "14",
+    "11",
+    "12"
+   ],
+   "target": "D"
+  },
+  {
+   "id": "gk-10",
+   "input": "In which year did World War II end?",
+   "choices": [
+    "1946",
+    "1945",
+    "1944",
+    "1943"
+   ],
+   "target": "B"
+  },
+  {
+   "id": "gk-11",
+   "input": "What is the capital of Australia?",
+   "choices": [
+    "Sydney",
+    "Perth",
+    "Melbourne",
+    "Canberra"
+   ],
+   "target": "D"
+  },
+  {
+   "id": "gk-12",
+   "input": "Which element has atomic number 1?",
+   "choices": [
+    "Lithium",
+    "Hydrogen",
+    "Oxygen",
+    "Helium"
+   ],
+   "target": "B"
+  },
+  {
+   "id": "gk-13",
+   "input": "Which data structure follows Last-In, First-Out (LIFO) order?",
+   "choices": [
+    "Stack",
+    "Heap",
+    "Linked list",
+    "Queue"
+   ],
+   "target": "A"
+  },
+  {
+   "id": "gk-14",
+   "input": "Approximately how fast does light travel in a vacuum?",
+   "choices": [
+    "30,000 km per second",
+    "300,000 km per second",
+    "150,000 km per second",
+    "3,000,000 km per second"
+   ],
+   "target": "B"
+  },
+  {
+   "id": "gk-15",
+   "input": "Who painted the Mona Lisa?",
+   "choices": [
+    "Raphael",
+    "Leonardo da Vinci",
+    "Donatello",
+    "Michelangelo"
+   ],
+   "target": "B"
+  },
+  {
+   "id": "gk-16",
+   "input": "What is the derivative of x^2 with respect to x?",
+   "choices": [
+    "x^2/2",
+    "x",
+    "2x",
+    "2"
+   ],
+   "target": "C"
+  },
+  {
+   "id": "gk-17",
+   "input": "Which organ in the human body produces insulin?",
+   "choices": [
+    "Kidney",
+    "Liver",
+    "Pancreas",
+    "Stomach"
+   ],
+   "target": "C"
+  },
+  {
+   "id": "gk-18",
+   "input": "What does the HTTP status code 404 mean?",
+   "choices": [
+    "Internal Server Error",
+    "Not Found",
+    "Unauthorized",
+    "Moved Permanently"
+   ],
+   "target": "B"
+  },
+  {
+   "id": "gk-19",
+   "input": "On which continent is the Sahara Desert?",
+   "choices": [
+    "Asia",
+    "Australia",
+    "Africa",
+    "South America"
+   ],
+   "target": "C"
+  },
+  {
+   "id": "gk-20",
+   "input": "What is the value of pi rounded to two decimal places?",
+   "choices": [
+    "3.16",
+    "3.41",
+    "3.12",
+    "3.14"
+   ],
+   "target": "D"
+  },
+  {
+   "id": "gk-21",
+   "input": "Which language is mainly used to style web pages?",
+   "choices": [
+    "CSS",
+    "HTML",
+    "SQL",
+    "Python"
+   ],
+   "target": "A"
+  },
+  {
+   "id": "gk-22",
+   "input": "How is Newton's second law of motion usually written?",
+   "choices": [
+    "PV = nRT",
+    "V = IR",
+    "E = mc^2",
+    "F = ma"
+   ],
+   "target": "D"
+  },
+  {
+   "id": "gk-23",
+   "input": "What is the freezing point of water at sea level in degrees Fahrenheit?",
+   "choices": [
+    "100",
+    "212",
+    "32",
+    "0"
+   ],
+   "target": "C"
+  },
+  {
+   "id": "gk-24",
+   "input": "Which Indian mathematician, known for work on infinite series and number theory, collaborated with G. H. Hardy?",
+   "choices": [
+    "Aryabhata",
+    "C. V. Raman",
+    "Homi Bhabha",
+    "Srinivasa Ramanujan"
+   ],
+   "target": "D"
+  },
+  {
+   "id": "gk-25",
+   "input": "In SQL, which clause filters groups after a GROUP BY?",
+   "choices": [
+    "WHERE",
+    "LIMIT",
+    "HAVING",
+    "ORDER BY"
+   ],
+   "target": "C"
+  },
+  {
+   "id": "gk-26",
+   "input": "What is the main component of natural gas?",
+   "choices": [
+    "Butane",
+    "Propane",
+    "Ethane",
+    "Methane"
+   ],
+   "target": "D"
+  },
+  {
+   "id": "gk-27",
+   "input": "Which of these numbers is prime?",
+   "choices": [
+    "21",
+    "29",
+    "33",
+    "27"
+   ],
+   "target": "B"
+  },
+  {
+   "id": "gk-28",
+   "input": "Who proposed the theory of evolution by natural selection?",
+   "choices": [
+    "Charles Darwin",
+    "Louis Pasteur",
+    "Isaac Newton",
+    "Gregor Mendel"
+   ],
+   "target": "A"
+  },
+  {
+   "id": "gk-29",
+   "input": "In machine learning, what does overfitting mean?",
+   "choices": [
+    "The model is too simple to fit the training data",
+    "The model trains faster than expected",
+    "The dataset has too many features to load",
+    "The model does well on training data but poorly on new data"
+   ],
+   "target": "D"
+  },
+  {
+   "id": "gk-30",
+   "input": "What is the decimal number 10 in binary?",
+   "choices": [
+    "1010",
+    "1110",
+    "1100",
+    "1001"
+   ],
+   "target": "A"
+  }
+ ]
+}

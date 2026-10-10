@@ -1,0 +1,111 @@
+{
+ "id": "grade-school-math",
+ "name": "Grade-school math",
+ "category": "math",
+ "scorer": "numeric",
+ "description": "20 multi-step word problems in the style of GSM8K, graded on the final number.",
+ "prompt_template": "Solve the following problem. Think step by step, then give the final answer on its own line in the form 'Answer: <number>'.\n\n{input}",
+ "max_tokens": 1024,
+ "items": [
+  {
+   "id": "math-01",
+   "input": "A baker made 48 cupcakes. She sold 3/4 of them in the morning and 5 more in the afternoon. How many cupcakes are left?",
+   "target": "7"
+  },
+  {
+   "id": "math-02",
+   "input": "Tom has $120. He spends 25% of it on a book and then $18 on lunch. How many dollars does he have left?",
+   "target": "72"
+  },
+  {
+   "id": "math-03",
+   "input": "A train travels at 80 km/h for 2.5 hours, then at 60 km/h for 1.5 hours. How many kilometers does it travel in total?",
+   "target": "290"
+  },
+  {
+   "id": "math-04",
+   "input": "A rectangle has a perimeter of 54 cm and its length is twice its width. What is its area in square centimeters?",
+   "target": "162"
+  },
+  {
+   "id": "math-05",
+   "input": "Priya reads 15 pages each weekday and 40 pages each day on weekends. How many pages does she read in 3 weeks?",
+   "target": "465"
+  },
+  {
+   "id": "math-06",
+   "input": "A shop sells pens at 3 for $4. How many dollars do 18 pens cost?",
+   "target": "24"
+  },
+  {
+   "id": "math-07",
+   "input": "The average of five numbers is 18. Four of the numbers are 12, 20, 15 and 25. What is the fifth number?",
+   "target": "18"
+  },
+  {
+   "id": "math-08",
+   "input": "A water tank holds 1,200 liters and is 35% full. How many more liters are needed to fill it?",
+   "target": "780"
+  },
+  {
+   "id": "math-09",
+   "input": "Ravi is 4 times as old as his son. In 20 years he will be twice as old as his son. How old is Ravi now?",
+   "target": "40"
+  },
+  {
+   "id": "math-10",
+   "input": "A jacket is priced at $80. It gets a 15% discount, and then 10% sales tax is added to the discounted price. What is the final price in dollars?",
+   "target": "74.8"
+  },
+  {
+   "id": "math-11",
+   "input": "A class has 36 students and the ratio of boys to girls is 4:5. How many girls are in the class?",
+   "target": "20"
+  },
+  {
+   "id": "math-12",
+   "input": "A car uses 6 liters of fuel per 100 km and fuel costs 105 rupees per liter. How many rupees of fuel are needed for a 450 km trip?",
+   "target": "2835"
+  },
+  {
+   "id": "math-13",
+   "input": "Sam saves $15 in the first week, and each week he saves $5 more than the week before. How many dollars has he saved in total after 6 weeks?",
+   "target": "165"
+  },
+  {
+   "id": "math-14",
+   "input": "A farm has chickens and cows with 30 heads and 74 legs in total. How many cows are there?",
+   "target": "7"
+  },
+  {
+   "id": "math-15",
+   "input": "A movie starts at 7:45 PM and lasts 2 hours and 38 minutes. How many minutes after 10:00 PM does it end?",
+   "target": "23"
+  },
+  {
+   "id": "math-16",
+   "input": "A box holds 4 red, 6 blue and 10 green marbles. What percentage of the marbles are blue?",
+   "target": "30"
+  },
+  {
+   "id": "math-17",
+   "input": "A recipe needs 250 g of flour for 10 cookies. How many grams of flour are needed for 34 cookies?",
+   "target": "850"
+  },
+  {
+   "id": "math-18",
+   "input": "Anil types 45 words per minute. How many minutes does he need to type a 2,700-word essay?",
+   "target": "60"
+  },
+  {
+   "id": "math-19",
+   "input": "A phone's price rose from 15,000 rupees to 18,000 rupees. By what percent did the price increase?",
+   "target": "20"
+  },
+  {
+   "id": "math-20",
+   "input": "A garden is 12 m long and 8 m wide. A path 1 m wide runs around the outside of it. What is the area of the path in square meters?",
+   "target": "44"
+  }
+ ]
+}

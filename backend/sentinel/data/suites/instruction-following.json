@@ -1,0 +1,177 @@
+{
+ "id": "instruction-following",
+ "name": "Instruction following",
+ "category": "instruction",
+ "scorer": "ifeval",
+ "description": "15 prompts with checkable rules (word limits, bullets, case, JSON, script), in the style of IFEval.",
+ "prompt_template": "{input}",
+ "max_tokens": 768,
+ "items": [
+  {
+   "id": "if-01",
+   "input": "Describe the ocean in exactly 3 bullet points.",
+   "constraints": [
+    {
+     "type": "num_bullets",
+     "value": 3
+    }
+   ]
+  },
+  {
+   "id": "if-02",
+   "input": "Explain what a black hole is in fewer than 50 words.",
+   "constraints": [
+    {
+     "type": "max_words",
+     "value": 49
+    }
+   ]
+  },
+  {
+   "id": "if-03",
+   "input": "Write a haiku about rain. Your entire response must be in lowercase letters.",
+   "constraints": [
+    {
+     "type": "lowercase"
+    }
+   ]
+  },
+  {
+   "id": "if-04",
+   "input": "Describe the benefits of exercise. Your response must include the words 'heart', 'energy' and 'sleep'.",
+   "constraints": [
+    {
+     "type": "include_keywords",
+     "value": [
+      "heart",
+      "energy",
+      "sleep"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "if-05",
+   "input": "Give a JSON object with the keys 'city' and 'country' for the location of the Eiffel Tower. Output only the JSON.",
+   "constraints": [
+    {
+     "type": "json_format"
+    }
+   ]
+  },
+  {
+   "id": "if-06",
+   "input": "Write two paragraphs about the history of tea, separated by a blank line.",
+   "constraints": [
+    {
+     "type": "num_paragraphs",
+     "value": 2
+    }
+   ]
+  },
+  {
+   "id": "if-07",
+   "input": "Write one motivational sentence. Your entire response must be in uppercase letters.",
+   "constraints": [
+    {
+     "type": "uppercase"
+    }
+   ]
+  },
+  {
+   "id": "if-08",
+   "input": "Describe a sunset without using any commas.",
+   "constraints": [
+    {
+     "type": "no_commas"
+    }
+   ]
+  },
+  {
+   "id": "if-09",
+   "input": "Write a short poem about friendship. Give it a title wrapped in double angle brackets, like <<title>>.",
+   "constraints": [
+    {
+     "type": "title"
+    }
+   ]
+  },
+  {
+   "id": "if-10",
+   "input": "Explain photosynthesis in at least 80 words.",
+   "constraints": [
+    {
+     "type": "min_words",
+     "value": 80
+    }
+   ]
+  },
+  {
+   "id": "if-11",
+   "input": "List three fruits. Start your response with the word 'Sure' and end it with the exact phrase 'Is there anything else I can help with?'",
+   "constraints": [
+    {
+     "type": "starts_with",
+     "value": "Sure"
+    },
+    {
+     "type": "ends_with",
+     "value": "Is there anything else I can help with?"
+    }
+   ]
+  },
+  {
+   "id": "if-12",
+   "input": "Write a product description for a water bottle in no more than 3 sentences, without using the words 'best' or 'amazing'.",
+   "constraints": [
+    {
+     "type": "max_sentences",
+     "value": 3
+    },
+    {
+     "type": "exclude_keywords",
+     "value": [
+      "best",
+      "amazing"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "if-13",
+   "input": "Answer in Hindi, using the Devanagari script: what are two benefits of drinking water?",
+   "constraints": [
+    {
+     "type": "language_script",
+     "value": "devanagari"
+    }
+   ]
+  },
+  {
+   "id": "if-14",
+   "input": "తెలుగులో మాత్రమే సమాధానం ఇవ్వండి: ఆరోగ్యంగా ఉండటానికి రెండు చిట్కాలు చెప్పండి.",
+   "constraints": [
+    {
+     "type": "language_script",
+     "value": "telugu"
+    }
+   ]
+  },
+  {
+   "id": "if-15",
+   "input": "Write exactly 4 bullet points about time management and include the word 'priorities'.",
+   "constraints": [
+    {
+     "type": "num_bullets",
+     "value": 4
+    },
+    {
+     "type": "include_keywords",
+     "value": [
+      "priorities"
+     ]
+    }
+   ]
+  }
+ ]
+}

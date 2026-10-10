@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+.pytest_cache/
+# Sentinel local data
+*.db
+*.db-wal
+*.db-shm
+reports/
+# Editors / OS
+.DS_Store
+.vscode/
+.idea/

@@ -1,0 +1,47 @@
+{
+ "id": "summarization",
+ "name": "Summarization",
+ "category": "summarization",
+ "scorer": "rouge_l",
+ "description": "6 news-style passages summarized in one or two sentences, scored by ROUGE-L against a reference.",
+ "prompt_template": "Summarize the following text in one or two sentences.\n\nText:\n{context}",
+ "max_tokens": 256,
+ "items": [
+  {
+   "id": "sum-01",
+   "input": "Summarize the text in one or two sentences.",
+   "context": "City officials announced on Monday that the central library will extend its opening hours starting next month. The library will now stay open until 10 p.m. on weekdays instead of 7 p.m., and will open on Sundays for the first time in a decade. Officials said the change follows a survey in which most residents asked for evening study space. The extra hours will be funded by a state education grant and staffed by twelve new part-time employees.",
+   "target": "The central library will stay open until 10 p.m. on weekdays and open on Sundays from next month, after residents asked for evening study space, funded by a state education grant."
+  },
+  {
+   "id": "sum-02",
+   "input": "Summarize the text in one or two sentences.",
+   "context": "Researchers have developed a low-cost water filter made from sand, charcoal and banana peels. In tests across three villages, the filter removed more than 90 percent of lead and copper from contaminated well water. Each filter costs less than two dollars to build and can be maintained with local materials. The team now plans a larger trial with 500 households next year.",
+   "target": "A low-cost filter made from sand, charcoal and banana peels removed over 90 percent of lead and copper from well water, and a larger trial with 500 households is planned."
+  },
+  {
+   "id": "sum-03",
+   "input": "Summarize the text in one or two sentences.",
+   "context": "The company reported quarterly revenue of 4.2 billion dollars, up 12 percent from the same period last year, driven mainly by strong sales of its cloud services. However, profits fell slightly because of higher spending on new data centres. The chief executive said the investment would pay off over the next two years as demand for AI computing grows.",
+   "target": "Quarterly revenue rose 12 percent to 4.2 billion dollars on strong cloud sales, but profits fell slightly due to spending on new data centres meant to meet growing AI demand."
+  },
+  {
+   "id": "sum-04",
+   "input": "Summarize the text in one or two sentences.",
+   "context": "A new study of 20,000 adults found that people who walked at least 7,000 steps a day had a 50 to 70 percent lower risk of early death than those who walked fewer steps. The benefits levelled off above about 10,000 steps. Walking speed made little difference once the total number of steps was taken into account.",
+   "target": "A study of 20,000 adults found that walking at least 7,000 steps a day cut the risk of early death by 50 to 70 percent, with benefits levelling off around 10,000 steps."
+  },
+  {
+   "id": "sum-05",
+   "input": "Summarize the text in one or two sentences.",
+   "context": "Heavy rain caused flooding across the coastal district on Friday, closing schools and cutting power to about 30,000 homes. Emergency teams rescued more than 200 people from low-lying areas. The weather department has warned of more rain over the weekend and advised residents to avoid travel unless necessary.",
+   "target": "Flooding from heavy rain closed schools, cut power to about 30,000 homes and led to over 200 rescues, with more rain expected over the weekend."
+  },
+  {
+   "id": "sum-06",
+   "input": "Summarize the text in one or two sentences.",
+   "context": "The school's robotics team won first place at the national championship after their robot completed the obstacle course in record time. The six students spent eight months designing and programming the robot, which uses cameras and a small neural network to recognise objects. They will represent the country at the international finals in Tokyo in November.",
+   "target": "The school's robotics team won the national championship with a camera-guided robot built over eight months and will compete at the international finals in Tokyo in November."
+  }
+ ]
+}

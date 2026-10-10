@@ -1,0 +1,61 @@
+{
+ "id": "helpfulness",
+ "name": "Helpfulness (LLM-judged)",
+ "category": "chat",
+ "scorer": "judge",
+ "description": "10 everyday requests graded 1-10 by a judge model you choose, using reference notes.",
+ "prompt_template": "{input}",
+ "max_tokens": 1024,
+ "items": [
+  {
+   "id": "help-01",
+   "input": "Explain the difference between a list and a tuple in Python.",
+   "target": "Lists are mutable and use []; tuples are immutable and use (). Tuples are hashable (usable as dict keys) when their items are. Mentions when to use each."
+  },
+  {
+   "id": "help-02",
+   "input": "How can I improve my sleep quality? Give practical tips.",
+   "target": "Consistent sleep schedule; limit caffeine and screens before bed; dark, quiet, cool room; regular exercise; avoid heavy late meals; see a doctor if problems persist."
+  },
+  {
+   "id": "help-03",
+   "input": "Write a polite email asking my manager for a day off next Friday.",
+   "target": "Has a subject line, polite and concise tone, states the date, offers to hand over or finish urgent work, thanks the manager."
+  },
+  {
+   "id": "help-04",
+   "input": "What is the difference between RAM and storage?",
+   "target": "RAM is fast, volatile working memory for running programs; storage (SSD/HDD) is slower, larger and keeps data when powered off."
+  },
+  {
+   "id": "help-05",
+   "input": "Explain recursion to a beginner with a simple example.",
+   "target": "A function that calls itself; needs a base case to stop; a correct small example such as factorial or countdown; warns about infinite recursion."
+  },
+  {
+   "id": "help-06",
+   "input": "I have chicken, rice, onions and tomatoes. Suggest a simple dinner recipe.",
+   "target": "Uses mainly those ingredients plus basic pantry items; clear numbered steps; rough quantities and cooking times."
+  },
+  {
+   "id": "help-07",
+   "input": "What are the pros and cons of remote work?",
+   "target": "Balanced: pros such as flexibility and no commute; cons such as isolation, communication friction and blurred work-life boundaries."
+  },
+  {
+   "id": "help-08",
+   "input": "Explain what an API is using an everyday analogy.",
+   "target": "An interface that lets programs request services from each other; a clear analogy such as a restaurant waiter; mentions requests and responses."
+  },
+  {
+   "id": "help-09",
+   "input": "How do I calculate compound interest? Include the formula and an example.",
+   "target": "Gives A = P(1 + r/n)^(nt) with each term explained and a worked example whose arithmetic is correct."
+  },
+  {
+   "id": "help-10",
+   "input": "Give me a 3-day beginner workout plan.",
+   "target": "Three distinct days with exercises, sets and reps suitable for beginners; warm-up; rest days; safety advice."
+  }
+ ]
+}
