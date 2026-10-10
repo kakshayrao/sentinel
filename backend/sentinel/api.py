@@ -126,7 +126,10 @@ async def test_model(model_id: str) -> ModelTestResult:
         completion = await providers.complete_once(
             model, [{"role": "user", "content": "Reply with the single word: pong"}], temperature=0.0, max_tokens=64
         )
-        return ModelTestResult(ok=True, latency_ms=completion.latency_ms, response=completion.text[:500])
+        reply = completion.text.strip()[:500]
+        if not reply and completion.truncated:  # reasoning models think before answering
+            reply = "(reachable; it was still reasoning when the short test stopped)"
+        return ModelTestResult(ok=True, latency_ms=completion.latency_ms, response=reply)
     except Exception as e:
         return ModelTestResult(ok=False, error=str(e)[:500])
 

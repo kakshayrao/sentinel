@@ -14,6 +14,7 @@ import {
   SheetIcon,
   SquareIcon,
   Trash2Icon,
+  TriangleAlertIcon,
 } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Cell, XAxis, YAxis } from "recharts";
 
@@ -116,6 +117,7 @@ export function RunDetail() {
   const perf = summary.perf;
   const openSample = run.samples.find((s) => s.id === openId) ?? null;
   const tone = scoreTone(summary.score);
+  const truncated = run.samples.filter((s) => s.truncated).length;
 
   async function cancel() {
     try {
@@ -222,8 +224,20 @@ export function RunDetail() {
             <AlertDescription>{run.error}</AlertDescription>
           </Alert>
         )}
+        {truncated > 0 && (
+          <Alert>
+            <TriangleAlertIcon />
+            <AlertTitle>
+              {truncated} of {run.samples.length} answers hit the {run.config.max_tokens ?? "benchmark default"} token limit
+            </AlertTitle>
+            <AlertDescription>
+              Reasoning models think before they answer, so a low limit cuts them off and lowers their score. Start a new
+              run with a higher <span className="text-foreground font-medium">Max output tokens</span> (2048 or more).
+            </AlertDescription>
+          </Alert>
+        )}
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
             label="Overall score"
             value={summary.completed > summary.errors ? pct(summary.score) : "—"}
@@ -243,7 +257,7 @@ export function RunDetail() {
           />
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-5">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
           <div className="lg:col-span-2">
             <SuiteChart run={run} />
           </div>

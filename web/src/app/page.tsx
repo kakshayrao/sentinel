@@ -58,7 +58,7 @@ function Onboarding({ onChange }: { onChange: () => void }) {
           against it.
         </CardDescription>
       </CardHeader>
-      <CardContent className="grid gap-4 md:grid-cols-3">
+      <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <div className="bg-background rounded-lg border p-4">
           <div className="text-muted-foreground mb-2 font-mono text-xs">01</div>
           <div className="font-medium">Connect a model</div>
@@ -207,7 +207,15 @@ function ScoreChart({ data }: { data: Overview }) {
         <ChartContainer config={config} className="h-72 w-full">
           <BarChart data={rows} margin={{ left: -16 }}>
             <CartesianGrid vertical={false} />
-            <XAxis dataKey="suite" tickLine={false} axisLine={false} tickMargin={8} interval={0} tickFormatter={(v: string) => (v.length > 14 ? `${v.slice(0, 13)}…` : v)} />
+            <XAxis
+              dataKey="suite"
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              interval="preserveStartEnd" // skip labels that would collide on narrow screens
+              minTickGap={12}
+              tickFormatter={(v: string) => (v.length > 14 ? `${v.slice(0, 13)}…` : v)}
+            />
             <YAxis tickLine={false} axisLine={false} domain={[0, 100]} />
             <ChartTooltip content={<ChartTooltipContent />} />
             <ChartLegend content={<ChartLegendContent />} />
@@ -287,7 +295,7 @@ export default function OverviewPage() {
         {data && (
           <>
             {(models?.length ?? 0) === 0 && <Onboarding onChange={refresh} />}
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <StatCard label="Models" value={num(data.models)} icon={<BoxIcon />} hint="Connected endpoints" />
               <StatCard label="Runs" value={num(data.runs)} icon={<ListChecksIcon />} hint="Evaluation runs so far" />
               <StatCard label="Items evaluated" value={num(data.samples)} icon={<TargetIcon />} hint="Across completed runs" />
@@ -301,7 +309,7 @@ export default function OverviewPage() {
             {hasResults ? (
               <>
                 <Leaderboard data={data} />
-                <div className="grid gap-6 lg:grid-cols-3">
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                   <div className="lg:col-span-2">
                     <ScoreChart data={data} />
                   </div>

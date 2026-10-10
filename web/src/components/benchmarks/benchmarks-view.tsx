@@ -99,7 +99,7 @@ export function BenchmarksView() {
             )}
           </EmptyState>
         )}
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {filtered.map((s) => (
             <Card key={s.id} className="group hover:border-foreground/20 relative gap-4 transition-colors">
               <CardHeader>

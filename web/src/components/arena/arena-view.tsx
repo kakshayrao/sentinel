@@ -46,7 +46,16 @@ function Answer({ label, side, winner, revealed }: { label: string; side: Battle
             side.error && "text-destructive",
           )}
         >
-          {side.error ?? <Markdown>{side.response || "(empty reply)"}</Markdown>}
+          {side.error ??
+            (side.response ? (
+              <Markdown>{side.response}</Markdown>
+            ) : (
+              <span className="text-muted-foreground italic">
+                {side.truncated
+                  ? "No answer: this model was still thinking when it reached the max tokens limit. Raise Max tokens and battle again."
+                  : "(empty reply)"}
+              </span>
+            ))}
         </div>
         <div className="text-muted-foreground tabular flex gap-4 text-xs">
           <span>{ms(side.latency_ms)}</span>
@@ -62,6 +71,7 @@ function BattleTab({ onVoted }: { onVoted: () => void }) {
   const [prompt, setPrompt] = useState("");
   const [modelA, setModelA] = useState(RANDOM);
   const [modelB, setModelB] = useState(RANDOM);
+  const [maxTokens, setMaxTokens] = useState(1024); // reasoning models need 2048+ to reach an answer
   const [battle, setBattle] = useState<Battle | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -72,7 +82,8 @@ function BattleTab({ onVoted }: { onVoted: () => void }) {
     setLoading(true);
     setBattle(null);
     try {
-      const body = modelA === RANDOM ? { prompt } : { prompt, model_a_id: modelA, model_b_id: modelB };
+      const picks = modelA === RANDOM ? {} : { model_a_id: modelA, model_b_id: modelB };
+      const body = { prompt, max_tokens: maxTokens, ...picks };
       setBattle(await api.post<Battle>("/arena/battles", body));
     } catch (e) {
       toast.error((e as Error).message);
@@ -138,6 +149,21 @@ function BattleTab({ onVoted }: { onVoted: () => void }) {
                 </Select>
               </div>
             ))}
+            <div className="space-y-2 sm:w-36">
+              <Label>Max tokens</Label>
+              <Select value={String(maxTokens)} onValueChange={(v) => setMaxTokens(Number(v))}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[512, 1024, 2048, 4096].map((n) => (
+                    <SelectItem key={n} value={String(n)}>
+                      {n.toLocaleString()}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <Button className="sm:ml-auto" onClick={start} disabled={!prompt.trim() || loading || !picksValid}>
               {loading ? <Loader2Icon className="animate-spin" /> : <SwordsIcon />} {loading ? "Generating…" : "Battle"}
             </Button>
@@ -147,7 +173,7 @@ function BattleTab({ onVoted }: { onVoted: () => void }) {
       </Card>
 
       {loading && (
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <LoadingRows rows={4} />
           <LoadingRows rows={4} />
         </div>
@@ -155,7 +181,7 @@ function BattleTab({ onVoted }: { onVoted: () => void }) {
 
       {battle && (
         <>
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <Answer label="Model A" side={battle.a} winner={battle.winner === "a"} revealed={!!battle.winner} />
             <Answer label="Model B" side={battle.b} winner={battle.winner === "b"} revealed={!!battle.winner} />
           </div>
@@ -167,7 +193,7 @@ function BattleTab({ onVoted }: { onVoted: () => void }) {
               </Button>
             </div>
           ) : (
-            <div className="grid gap-2 sm:grid-cols-4">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-4">
               <Button variant="outline" onClick={() => vote("a")}>
                 A is better
               </Button>

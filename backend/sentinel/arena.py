@@ -21,6 +21,7 @@ async def _answer(model: Model, body: BattleIn) -> BattleSide:
         )
         # Judge answers, not reasoning: inline <think> blocks would reveal which model is which
         return BattleSide(response=strip_reasoning(completion.text), latency_ms=completion.latency_ms,
+                          truncated=completion.truncated,
                           tokens_per_sec=completion.tokens_per_sec, model_id=model.id, model_name=model.name)
     except Exception as e:
         return BattleSide(response=None, error=str(e)[:300], model_id=model.id, model_name=model.name)

@@ -107,7 +107,7 @@ export function PlaygroundView() {
   return (
     <>
       <PageHeader title="Playground" description="Chat with any of your models and watch its speed live." />
-      <div className="mx-auto grid w-full max-w-7xl flex-1 gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[18rem_1fr]">
+      <div className="mx-auto grid w-full max-w-7xl flex-1 gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[18rem_minmax(0,1fr)]">
         <Card className="h-fit lg:sticky lg:top-32">
           <CardHeader>
             <CardTitle>Settings</CardTitle>
@@ -165,7 +165,7 @@ export function PlaygroundView() {
                   <div className="font-medium">Start a conversation</div>
                   <p className="text-muted-foreground mt-1 text-sm">Each reply shows time to first token and tokens per second.</p>
                 </div>
-                <div className="grid w-full max-w-2xl gap-2 sm:grid-cols-2">
+                <div className="grid grid-cols-1 w-full max-w-2xl gap-2 sm:grid-cols-2">
                   {SUGGESTIONS.map((s) => (
                     <button
                       key={s}
@@ -201,7 +201,16 @@ export function PlaygroundView() {
                       (t.role === "assistant" && t.content ? (
                         <Markdown>{t.content}</Markdown>
                       ) : (
-                        t.content || (streaming && i === turns.length - 1 ? <span className="animate-pulse">▍</span> : "")
+                        t.content ||
+                        (streaming && i === turns.length - 1 ? (
+                          <span className="animate-pulse">▍</span>
+                        ) : (
+                          <span className="text-muted-foreground italic">
+                            {t.metrics?.truncated
+                              ? "No answer yet: the model was still thinking when it reached the max tokens limit. Raise Max tokens and ask again."
+                              : "(empty reply)"}
+                          </span>
+                        ))
                       ))}
                   </div>
                   {t.metrics && (

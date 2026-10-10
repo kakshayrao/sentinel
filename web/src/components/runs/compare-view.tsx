@@ -84,7 +84,7 @@ function Changes({ a, b }: { a: RunDetail; b: RunDetail }) {
     );
 
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -159,7 +159,7 @@ export function CompareView() {
               <EmptyState icon={<GitCompareIcon />} title="No benchmarks in common" description="These runs used different benchmarks, so their scores can't be compared." />
             ) : (
               <>
-                <div className="grid gap-4 md:grid-cols-3">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                   <Card className="gap-1 p-5">
                     <div className="text-muted-foreground text-sm">Average score on {shared} shared benchmark{shared === 1 ? "" : "s"}</div>
                     <div className="mt-2 flex items-baseline gap-3">

@@ -71,6 +71,23 @@ its models; click one to add it. No server yet? Add the **random baseline** to e
 | vLLM | `http://localhost:8000/v1` | `vllm serve <model>` |
 | Jan | `http://localhost:1337/v1` | Settings → Local API server |
 
+### Laptops and reasoning models
+
+Sentinel was tested end to end on a 16 GB laptop (i5-1135G7, 2 GB GeForce MX450) running
+`deepseek-r1:8b` (Q4_K_M) through Ollama. What worked:
+
+- **Cap Ollama's memory** with environment variables, then restart Ollama:
+  `OLLAMA_CONTEXT_LENGTH=4096`, `OLLAMA_NUM_PARALLEL=1`, `OLLAMA_MAX_LOADED_MODELS=1`,
+  `OLLAMA_FLASH_ATTENTION=1`, `OLLAMA_KV_CACHE_TYPE=q8_0`.
+- **Use a small GPU for memory, not speed.** On a 2 GB card Ollama offloads nothing by default.
+  Pinning a few layers (`PARAMETER num_gpu 8` in a Modelfile) gave the same ~4.5 tokens/s but left
+  about 1 GB more system RAM free.
+- **Give reasoning models room to think.** R1-style models write hundreds of reasoning tokens before
+  answering, so the built-in suites' default limits cut them off. Set **Max output tokens** to 2048 or
+  more; Sentinel flags every answer that hit the limit.
+- **Keep runs small.** At ~4.5 tokens/s a reasoning answer takes 1–8 minutes, so start with 1–2 items
+  per benchmark and one parallel request.
+
 Any other OpenAI-compatible endpoint works too. If it needs a key, set it in an environment variable
 on the backend and enter that variable's **name** in the model form. Keys are never stored.
 

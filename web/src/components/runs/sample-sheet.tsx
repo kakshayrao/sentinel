@@ -49,7 +49,7 @@ export function SampleSheet({
                 {[
                   ["Latency", ms(sample.latency_ms)],
                   ["First token", ms(sample.ttft_ms)],
-                  ["Output tokens", sample.output_tokens ?? "—"],
+                  ["Output tokens", `${sample.output_tokens ?? "—"}${sample.truncated ? " (limit hit)" : ""}`],
                 ].map(([label, value]) => (
                   <div key={label as string} className="rounded-md border p-2">
                     <div className="text-muted-foreground text-[11px]">{label}</div>

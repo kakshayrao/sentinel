@@ -199,6 +199,7 @@ class Sample(BaseModel):
     latency_ms: int | None = None
     ttft_ms: int | None = None
     output_tokens: int | None = None
+    truncated: bool = False  # reply stopped at the max token limit
     error: str | None = None
     created_at: str
 
@@ -223,6 +224,7 @@ class BattleSide(BaseModel):
     error: str | None = None
     latency_ms: int | None = None
     tokens_per_sec: float | None = None
+    truncated: bool = False  # stopped at max_tokens (reasoning models may have no answer yet)
     model_id: str | None = None  # hidden until voted
     model_name: str | None = None  # hidden until voted
 

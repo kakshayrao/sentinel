@@ -153,6 +153,7 @@ def test_arena_and_chat(client):
     b = client.post("/api/models", json={"name": "Baseline B", "kind": "baseline", "base_url": None, "model": "b"}).json()
     battle = client.post("/api/arena/battles", json={"prompt": "Say hi"}).json()
     assert battle["a"]["model_name"] is None  # hidden before voting
+    assert battle["a"]["truncated"] is False and battle["b"]["truncated"] is False
     voted = client.post(f"/api/arena/battles/{battle['id']}/vote", json={"winner": "a"}).json()
     assert voted["a"]["model_name"] in ("Random baseline", "Baseline B")
     assert client.post(f"/api/arena/battles/{battle['id']}/vote", json={"winner": "b"}).status_code == 409
@@ -218,8 +219,12 @@ def test_reasoning_cut_off_and_margins():
              "output_tokens": 3, "tokens_estimated": 0} for v in (1, 0, 1, 1)]
     summary = runner.summarize(4, rows, ["s"])
     assert summary.by_suite[0].score == 0.75
-    assert 0.4 < summary.by_suite[0].margin < 0.6  # 1.96 * 0.5 / sqrt(4)
-    assert runner.summarize(1, rows[:1], ["s"]).by_suite[0].margin == 0.0
+    assert 0.3 < summary.by_suite[0].margin < 0.4  # Wilson half-width for 3/4
+    # All-pass on a tiny sample must not claim certainty (the normal approximation gives 0)
+    all_pass = runner.summarize(2, rows[:1] * 2, ["s"]).by_suite[0]
+    assert all_pass.score == 1.0 and 0.3 < all_pass.margin < 0.35
+    fractional = [r | {"score": v} for r, v in zip(rows, (0.5, 0.7, 0.6, 0.6))]
+    assert 0.05 < runner.summarize(4, fractional, ["s"]).by_suite[0].margin < 0.15
 
 
 def test_old_database_gets_summary_column(tmp_path):
@@ -261,3 +266,17 @@ def test_unreachable_server_fails_fast(client):
     run = wait_for(client, res.json()[0]["id"])
     assert run["status"] == "failed" and "Cannot reach" in run["error"]
     assert run["samples"] == []  # stopped at the warm-up, not after 30 failed questions
+
+
+def test_reasoning_only_reply_is_explained(client, monkeypatch):
+    async def thinking_only(self, messages, *, temperature, max_tokens):
+        yield {"reasoning": "Let me think about this carefully..."}
+        yield {"finish": "length"}
+
+    monkeypatch.setattr(providers.RandomBaseline, "stream", thinking_only)
+    baseline = client.post("/api/models/baseline").json()
+    res = client.post("/api/runs", json={"model_ids": [baseline["id"]], "config": {"suite_ids": ["general-knowledge"], "limit": 2}})
+    run = wait_for(client, res.json()[0]["id"])
+    assert run["status"] == "completed"
+    assert all(s["truncated"] and "Still reasoning" in s["detail"] for s in run["samples"])
+    assert "still reasoning" in client.post(f"/api/models/{baseline['id']}/test").json()["response"]

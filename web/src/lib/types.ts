@@ -171,6 +171,7 @@ export interface Sample {
   latency_ms: number | null;
   ttft_ms: number | null;
   output_tokens: number | null;
+  truncated: boolean; // stopped at the max token limit
   error: string | null;
   created_at: string;
 }
@@ -192,6 +193,7 @@ export interface BattleSide {
   error: string | null;
   latency_ms: number | null;
   tokens_per_sec: number | null;
+  truncated: boolean;
   model_id: string | null;
   model_name: string | null;
 }

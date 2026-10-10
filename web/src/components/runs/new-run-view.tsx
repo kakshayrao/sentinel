@@ -140,7 +140,7 @@ export function NewRunView() {
   return (
     <>
       <PageHeader title="New run" description="Choose models and benchmarks. Each selected model gets its own run." />
-      <PageBody className="grid gap-6 lg:grid-cols-[1fr_20rem] lg:space-y-0">
+      <PageBody className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:space-y-0">
         <div className="min-w-0 space-y-6">
           {(modelsError || suitesError) && <ErrorState error={modelsError ?? suitesError} />}
 
@@ -164,7 +164,7 @@ export function NewRunView() {
                   No models yet. <Link className="text-foreground underline" href="/models?new=1">Add one</Link> first.
                 </p>
               ) : (
-                <div className="grid gap-2 sm:grid-cols-2">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   {models.map((m) => (
                     <SelectCard key={m.id} selected={modelIds.includes(m.id)} onClick={() => setModelIds((ids) => toggle(ids, m.id))}>
                       <span className="block truncate text-sm font-medium">{m.name}</span>
@@ -193,7 +193,7 @@ export function NewRunView() {
             </CardHeader>
             <CardContent>
               {!suites && <LoadingRows rows={3} />}
-              <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
                 {ordered.map((s) => (
                   <SelectCard key={s.id} selected={suiteIds.includes(s.id)} onClick={() => setSuiteIds(toggle(suiteIds, s.id))}>
                     <span className="flex items-center justify-between gap-2">
@@ -217,7 +217,7 @@ export function NewRunView() {
               <CardDescription>Defaults suit most comparisons: greedy decoding and a fixed sample.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid gap-6 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                 <div className="space-y-3">
                   <Label>Items per benchmark</Label>
                   <div className="flex items-center gap-3">

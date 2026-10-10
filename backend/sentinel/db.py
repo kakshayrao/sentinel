@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS samples (
     id INTEGER PRIMARY KEY AUTOINCREMENT, run_id TEXT NOT NULL, suite_id TEXT NOT NULL,
     item_id TEXT NOT NULL, prompt TEXT NOT NULL, response TEXT, target TEXT, score REAL,
     passed INTEGER, detail TEXT NOT NULL DEFAULT '', latency_ms INTEGER, ttft_ms INTEGER,
-    output_tokens INTEGER, tokens_estimated INTEGER NOT NULL DEFAULT 0, error TEXT,
+    output_tokens INTEGER, tokens_estimated INTEGER NOT NULL DEFAULT 0, truncated INTEGER NOT NULL DEFAULT 0, error TEXT,
     created_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS samples_run ON samples(run_id);
@@ -68,6 +68,8 @@ def init() -> None:
         columns = {r["name"] for r in c.execute("PRAGMA table_info(runs)")}
         if "summary" not in columns:
             c.execute("ALTER TABLE runs ADD COLUMN summary TEXT")
+        if "truncated" not in {r["name"] for r in c.execute("PRAGMA table_info(samples)")}:
+            c.execute("ALTER TABLE samples ADD COLUMN truncated INTEGER NOT NULL DEFAULT 0")
 
 
 def recover_interrupted() -> None:
@@ -188,12 +190,12 @@ def count_active_runs(model_id: str) -> int:
 
 SAMPLE_COLUMNS = (
     "run_id", "suite_id", "item_id", "prompt", "response", "target", "score", "passed", "detail",
-    "latency_ms", "ttft_ms", "output_tokens", "tokens_estimated", "error",
+    "latency_ms", "ttft_ms", "output_tokens", "tokens_estimated", "truncated", "error",
 )
 
 
 def insert_sample(sample: dict) -> None:
-    sample = {"tokens_estimated": 0, "detail": ""} | {k: v for k, v in sample.items() if v is not None}
+    sample = {"tokens_estimated": 0, "truncated": 0, "detail": ""} | {k: v for k, v in sample.items() if v is not None}
     values = [sample.get(k) for k in SAMPLE_COLUMNS]
     with connect() as c:
         c.execute(

@@ -19,6 +19,9 @@ class RunError(ValueError):
     pass
 
 
+NO_ANSWER = "Still reasoning when the token limit was reached. Raise max output tokens."
+
+
 def resolve_suites(config: RunConfig) -> list[Suite]:
     suites = []
     for suite_id in config.suite_ids:
@@ -114,12 +117,17 @@ async def _execute(run_id: str, provider, judge, config: RunConfig, work: list) 
                     "ttft_ms": completion.ttft_ms,
                     "output_tokens": completion.output_tokens,
                     "tokens_estimated": int(completion.tokens_estimated),
+                    "truncated": int(completion.truncated),
                 }
-                result = await score(suite, item, completion.text, judge)
-                detail = result.detail
-                if completion.truncated and not result.passed:
-                    detail += " · reply hit the max token limit"
-                sample |= {"score": result.value, "passed": int(result.passed), "detail": detail}
+                if completion.truncated and not completion.text.strip():
+                    # Reasoning models think first; the budget ran out before any answer
+                    sample |= {"score": 0.0, "passed": 0, "detail": NO_ANSWER}
+                else:
+                    result = await score(suite, item, completion.text, judge)
+                    detail = result.detail
+                    if completion.truncated and not result.passed:
+                        detail += " · reply hit the max token limit"
+                    sample |= {"score": result.value, "passed": int(result.passed), "detail": detail}
             except asyncio.CancelledError:
                 raise
             except Exception as e:  # network errors, server errors, judge failures
@@ -150,11 +158,24 @@ def _percentile(values: list[float], q: float) -> float:
     return statistics.quantiles(values, n=100, method="inclusive")[round(q * 100) - 1]
 
 
+Z = 1.96  # 95% confidence
+
+
 def _margin(values: list[float]) -> float:
-    """Half-width of the 95% confidence interval of the mean (normal approximation)."""
-    if len(values) < 2:
+    """Half-width of the 95% confidence interval of the mean score.
+
+    Pass/fail scores use the Wilson interval: the normal approximation collapses to ±0
+    when every item passes (or fails), which on small samples claims false certainty.
+    Fractional scores (F1, ROUGE-L, partial JSON) use the normal approximation."""
+    n = len(values)
+    if n == 0:
         return 0.0
-    return 1.96 * statistics.stdev(values) / math.sqrt(len(values))
+    if all(v in (0, 1) for v in values):
+        p = sum(values) / n
+        return Z * math.sqrt(p * (1 - p) / n + Z**2 / (4 * n**2)) / (1 + Z**2 / n)
+    if n < 2:
+        return 0.0
+    return Z * statistics.stdev(values) / math.sqrt(n)
 
 
 def summarize(total: int, samples: list[dict], suite_ids: list[str]) -> RunSummary:
@@ -245,7 +266,8 @@ def to_detail(row: dict, samples: list[dict], models: dict[str, Model]) -> RunDe
     return RunDetail(
         **run.model_dump(),
         samples=[
-            Sample(**{k: s[k] for k in Sample.model_fields if k in s} | {"passed": None if s["passed"] is None else bool(s["passed"])})
+            Sample(**{k: s[k] for k in Sample.model_fields if k in s}
+                   | {"passed": None if s["passed"] is None else bool(s["passed"]), "truncated": bool(s.get("truncated"))})
             for s in samples
         ],
     )
@@ -278,7 +300,7 @@ def report_markdown(run: RunDetail) -> str:
 
 
 CSV_COLUMNS = ["suite_id", "item_id", "passed", "score", "detail", "latency_ms", "ttft_ms",
-               "output_tokens", "error", "target", "response", "prompt"]
+               "output_tokens", "truncated", "error", "target", "response", "prompt"]
 
 
 def samples_csv(run: RunDetail) -> str:

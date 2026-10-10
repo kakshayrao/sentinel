@@ -53,7 +53,7 @@ export function ImportDialog({
             take longer to run.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid max-h-[50vh] gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
+        <div className="grid grid-cols-1 max-h-[50vh] gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
           {hub?.map((b) => (
             <button
               key={b.id}

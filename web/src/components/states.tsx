@@ -56,7 +56,7 @@ export function PageSkeleton() {
     <div className="mx-auto w-full max-w-7xl space-y-6 px-4 py-10 sm:px-6">
       <Skeleton className="h-9 w-64" />
       <Skeleton className="h-4 w-96" />
-      <div className="grid gap-4 pt-6 sm:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 pt-6 sm:grid-cols-4">
         {Array.from({ length: 4 }, (_, i) => (
           <Skeleton key={i} className="h-28" />
         ))}

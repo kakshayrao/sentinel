@@ -93,7 +93,7 @@ export function UploadDialog({
               and, depending on the scorer, a <code className="font-mono">target</code>.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="suite-name">Name</Label>
               <Input id="suite-name" value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="Support FAQ" required />
@@ -176,7 +176,7 @@ export function UploadDialog({
               {lines} item{lines === 1 ? "" : "s"}. Example line: <code className="font-mono break-all">{EXAMPLES[form.scorer]}</code>
             </p>
           </div>
-          <div className="grid gap-4 sm:grid-cols-[1fr_8rem]">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_8rem]">
             <div className="space-y-2">
               <Label htmlFor="system">
                 System prompt <span className="text-muted-foreground font-normal">(optional)</span>

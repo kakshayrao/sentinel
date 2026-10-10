@@ -92,7 +92,7 @@ export function BenchmarkDetail() {
         </div>
       </PageHeader>
       <PageBody>
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <StatCard label="Items" value={num(suite.items.length)} />
           <StatCard label="Scorer" value={<span className="text-2xl">{SCORER_LABELS[suite.scorer].label}</span>} hint={SCORER_LABELS[suite.scorer].description} />
           <StatCard label="Max output tokens" value={num(suite.max_tokens)} hint="Per item, unless a run overrides it" />
